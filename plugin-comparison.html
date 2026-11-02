@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WordPress Chatbot Plugins</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5b616b;
+    --border: #e3e1da;
+    --accent: #2f6f5e;
+    --accent-soft: #e4f0ec;
+    --good: #2f6f3e;
+    --good-soft: #e6f2e8;
+    --warn: #9a5a12;
+    --warn-soft: #fbf0e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b;
+      --surface: #1f2226;
+      --text: #e8e6e1;
+      --muted: #a3a8b0;
+      --border: #33373d;
+      --accent: #7cc2ad;
+      --accent-soft: #1f3530;
+      --good: #8fd19e;
+      --good-soft: #1e3324;
+      --warn: #f0b46a;
+      --warn-soft: #3a2b18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b;
+    --surface: #1f2226;
+    --text: #e8e6e1;
+    --muted: #a3a8b0;
+    --border: #33373d;
+    --accent: #7cc2ad;
+    --accent-soft: #1f3530;
+    --good: #8fd19e;
+    --good-soft: #1e3324;
+    --warn: #f0b46a;
+    --warn-soft: #3a2b18;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1300px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.4rem; margin: 56px 0 16px; }
+  h3 { font-size: 1.2rem; margin: 0; }
+  p { margin: 0 0 12px; }
+  .lead { color: var(--muted); font-size: 1.1rem; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+
+  .note {
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 24px 0;
+  }
+  .note strong { color: var(--accent); }
+
+  .types { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .type {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .type h3 { margin-bottom: 8px; font-size: 1.05rem; }
+  .type p { color: var(--muted); font-size: 0.95rem; margin: 0; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 620px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; }
+
+  .plugin {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .plugin header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .plugin header a { color: var(--accent); font-size: 0.9rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .tag {
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .pros, .cons { border-radius: 8px; padding: 14px 16px; }
+  .pros { background: var(--good-soft); }
+  .cons { background: var(--warn-soft); }
+  .pros h4, .cons h4 { margin: 0 0 6px; font-size: 0.9rem; }
+  .pros h4 { color: var(--good); }
+  .cons h4 { color: var(--warn); }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .best { margin-top: 14px; font-size: 0.95rem; }
+  .best strong { color: var(--accent); }
+
+  .findings li { margin-bottom: 10px; }
+
+  .verdict table { min-width: 720px; }
+  .verdict td { text-align: center; }
+  .verdict td:first-child { text-align: left; }
+  .verdict th { text-align: center; }
+  .verdict th:first-child { text-align: left; }
+  .verdict th.ours, .verdict td.ours { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .yes { color: var(--good); font-weight: 700; }
+  .no { color: var(--warn); font-weight: 700; }
+  .part { color: var(--muted); }
+  .legend { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.6rem; }
+    .types, .pros-cons { grid-template-columns: 1fr; }
+    .plugin { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>WordPress chatbot plugins, compared</h1>
+  <p class="lead">Ten plugins that add an AI assistant to a WordPress site. The assistant answers visitors' questions using the site's own content. This page explains what each one does, what it's good at and what to watch out for.</p>
+  <p class="meta">Information from the WordPress.org plugin pages, checked 27 October 2026.</p>
+
+  <div class="note">
+    <strong>In one sentence:</strong> AI Engine is the most popular but answering from your content is paid and hard to set up, MxChat is the closest to a free "answer from my site" bot, WPBot does the most, Jotform is the easiest if you already use Jotform, WebChatAgent has the best live chat and learns from the most kinds of files, AI BotKit is a generous free option with good hand-off to humans, and AI Chatbot Free Models is the cheapest but also the most basic.
+  </div>
+
+  <h2>Why build our own</h2>
+  <p>We need one thing done very well: <strong>answer visitors' questions accurately from our own site's content.</strong> The existing plugins are either big toolkits where this is a side feature, or outside services that hold our data. Our own plugin would focus on this one job, keep the data on our server and let us choose the AI provider.</p>
+  <div class="table-wrap verdict">
+    <table>
+      <thead>
+        <tr>
+          <th>What we need</th>
+          <th class="ours">Our plugin</th>
+          <th>AI Engine</th>
+          <th>MxChat</th>
+          <th>AI Puffer</th>
+          <th>WPBot</th>
+          <th>Jotform</th>
+          <th>WebChatAgent</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Focused only on answering from our content</td>
+          <td class="ours">✓</td>
+          <td class="no">✗</td>
+          <td class="part">~</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="part">~</td>
+          <td class="part">~</td>
+        </tr>
+        <tr>
+          <td>Data stays on our own server</td>
+          <td class="ours">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>We choose the AI provider</td>
+          <td class="ours">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="part">~</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>Matches by meaning, free, no outside database</td>
+          <td class="ours">✓</td>
+          <td class="no">✗</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>Updates itself when content changes</td>
+          <td class="ours">✓</td>
+          <td class="yes">✓</td>
+          <td class="yes">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="yes">✓</td>
+          <td class="part">~</td>
+        </tr>
+        <tr>
+          <td>Shows visitors where each answer came from</td>
+          <td class="ours">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>Says "I don't know" instead of guessing</td>
+          <td class="ours">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+        <tr>
+          <td>Plugin cost to answer from our content</td>
+          <td class="ours">No licence fee</td>
+          <td class="no">Paid Pro</td>
+          <td class="yes">Free</td>
+          <td class="part">Free basic; files paid</td>
+          <td class="no">Paid Pro</td>
+          <td class="no">Jotform plan</td>
+          <td class="part">Free plan; limits, paid plans</td>
+        </tr>
+        <tr>
+          <td>We own the code and decide what comes next</td>
+          <td class="ours">✓</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+          <td class="no">✗</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="legend">✓ yes &nbsp;·&nbsp; ~ partly, or only in a paid plan &nbsp;·&nbsp; ✗ no, or not mentioned on the plugin's WordPress.org page (checked 27 Oct 2026). "Our plugin" shows the plan for what we will build. Every option also pays the AI provider for usage (or uses free models); the cost row is the plugin's own price on top of that.</p>
+
+  <h2>Two ways these plugins work</h2>
+  <div class="types">
+    <div class="type">
+      <h3>Runs on your own website</h3>
+      <p>You install the plugin and connect it to an AI company (like OpenAI) with your own key. You pay the AI company directly for what you use. More control, more setup.</p>
+      <p style="margin-top:8px"><em>WPBot, AI Chatbot Free Models</em></p>
+    </div>
+    <div class="type">
+      <h3>Connects to an outside service</h3>
+      <p>The plugin links your site to the company's own platform. You sign up there and manage the bot from their dashboard. Easier, but you depend on that company.</p>
+      <p style="margin-top:8px"><em>Jotform, WebChatAgent, AI BotKit (probably)</em></p>
+    </div>
+  </div>
+
+  <h2>Quick comparison</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Plugin</th>
+          <th>Sites using it</th>
+          <th>Cost</th>
+          <th>What it can learn from</th>
+          <th>Hands chats to a human?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>WPBot</td>
+          <td>5,000+</td>
+          <td>Free version; best parts paid</td>
+          <td>Pages, posts, PDFs, spreadsheets, Google Sheets</td>
+          <td>Yes (paid)</td>
+        </tr>
+        <tr>
+          <td>Jotform AI Chatbot</td>
+          <td>5,000+</td>
+          <td>Jotform plan</td>
+          <td>Whole site (updates itself), documents, FAQs</td>
+          <td>Basic</td>
+        </tr>
+        <tr>
+          <td>AI BotKit</td>
+          <td>100+</td>
+          <td>Free; extras paid</td>
+          <td>Pages, posts, PDFs, other websites</td>
+          <td>Yes, 5 ways</td>
+        </tr>
+        <tr>
+          <td>WebChatAgent</td>
+          <td>300+</td>
+          <td>Free plan; bigger plans paid</td>
+          <td>Site, PDFs, Word, spreadsheets, Notion, Confluence</td>
+          <td>Yes, full live chat</td>
+        </tr>
+        <tr>
+          <td>AI Chatbot Free Models</td>
+          <td>100+</td>
+          <td>Free (pay AI only, can be $0)</td>
+          <td>Pages and posts only</td>
+          <td>No</td>
+        </tr>
+        <tr>
+          <td>AI Engine</td>
+          <td>90,000+</td>
+          <td>Free; answering from content is paid</td>
+          <td>Posts, PDFs (needs an outside search database)</td>
+          <td>Not mentioned</td>
+        </tr>
+        <tr>
+          <td>BetterDocs</td>
+          <td>30,000+</td>
+          <td>Docs plugin; chatbot is a paid add-on</td>
+          <td>Your documentation (method not explained)</td>
+          <td>Not mentioned</td>
+        </tr>
+        <tr>
+          <td>AI Puffer</td>
+          <td>10,000+</td>
+          <td>Free; files and web pages paid</td>
+          <td>Posts, pages, products, Q&amp;A</td>
+          <td>Not mentioned</td>
+        </tr>
+        <tr>
+          <td>MxChat</td>
+          <td>2,000+</td>
+          <td>Free core; add-ons paid</td>
+          <td>Almost everything: pages, PDFs, Word, links, YouTube, Q&amp;A; updates itself</td>
+          <td>Yes, via Slack</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Each plugin in detail</h2>
+
+  <article class="plugin">
+    <header>
+      <h3>1. WPBot</h3>
+      <a href="https://wordpress.org/plugins/chatbot/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By QuantumCloud</span>
+      <span class="tag">Since 2018</span>
+      <span class="tag">Rated 4.7 / 5 (124 reviews)</span>
+    </div>
+    <p>The oldest and most complete option. It started as a simple chatbot that follows buttons and keywords, and has grown into a full toolkit: it can answer from your content, book appointments, collect leads, sell WooCommerce products in the chat and reply on Facebook, Instagram, WhatsApp and Telegram. You can choose which AI to use, including ChatGPT, Gemini and Claude.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Does almost everything</li>
+          <li>Works even without AI</li>
+          <li>You pick the AI provider</li>
+          <li>One-time agency licence for 50 sites, with your own branding</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>So many settings it can feel overwhelming</li>
+          <li>Answering from your content needs the paid version</li>
+          <li>Multiple languages only in the top plan</li>
+          <li>Bot gets stuck if your AI account runs out of credit</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> agencies and businesses that want one plugin to do everything.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>2. Jotform AI Chatbot</h3>
+      <a href="https://wordpress.org/plugins/jotform-ai-chatbot/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By Jotform</span>
+      <span class="tag">Outside service</span>
+      <span class="tag">1 review</span>
+    </div>
+    <p>A bridge between your site and Jotform's AI assistant. It reads your website on its own and keeps up when you add or change content, so you don't have to retrain it. It's good at guiding visitors through forms as a conversation, and it can answer WooCommerce product and order questions.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Keeps itself up to date automatically</li>
+          <li>Turns forms into friendly conversations</li>
+          <li>Option to keep data in Europe</li>
+          <li>Well-known company</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>You need a Jotform account and depend on them</li>
+          <li>Prices and the AI used aren't shown</li>
+          <li>No WhatsApp or social media channels</li>
+          <li>Only one review despite many users</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> sites that already use Jotform, or that want a bot they never have to maintain.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>3. AI BotKit</h3>
+      <a href="https://wordpress.org/plugins/ai-botkit-for-lead-generation/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By WisdmLabs</span>
+      <span class="tag">Since 2025</span>
+      <span class="tag">3 reviews</span>
+    </div>
+    <p>A newer plugin from a well-known WordPress agency. It learns from your pages, posts, PDFs and other websites, and stays in sync when your content changes. When a visitor needs a real person, the bot notices and passes the chat, with a short summary, to your team by email, WhatsApp, Telegram, Instagram or Messenger.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>A lot is free, including several bots</li>
+          <li>Smart hand-off to humans with a summary</li>
+          <li>50+ languages</li>
+          <li>Several bots can share one knowledge base</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Unclear where your data is stored</li>
+          <li>Collecting leads seems to be paid and still in testing</li>
+          <li>Very new, few users</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> small businesses wanting a capable free bot that can call in a human.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>4. WebChatAgent</h3>
+      <a href="https://wordpress.org/plugins/webchatagent/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">Outside service</span>
+      <span class="tag">Since 2025</span>
+      <span class="tag">2 reviews</span>
+    </div>
+    <p>Click "connect", sign up and it works, with no AI key to set up. It learns from your website plus PDFs, Word files, spreadsheets, Notion and Confluence. It has a real live chat inbox where your staff can take over a conversation and hand it back to the AI. It can also book appointments and look up WooCommerce orders after checking who the customer is.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Learns from the widest range of sources</li>
+          <li>Proper live chat alongside the AI</li>
+          <li>Safe order lookups</li>
+          <li>Pops up at smart moments (scrolling, leaving the page)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Settings live on their website, not in WordPress</li>
+          <li>Prices not shown</li>
+          <li>Very new, few reviews</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> support teams that want AI plus real people in one inbox.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>5. AI Chatbot Free Models</h3>
+      <a href="https://wordpress.org/plugins/chatbot-ai-free-models/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By NewCodeByte (one developer)</span>
+      <span class="tag">100% free</span>
+      <span class="tag">10 reviews</span>
+    </div>
+    <p>A simple, lightweight chat box that runs on your own site. You connect it to any AI company, and through a service called OpenRouter you can use free AI models, so running it can cost nothing. To answer, it searches your posts and pages for matching words and links to the pages it used.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Completely free; can run at $0</li>
+          <li>No account with an outside platform</li>
+          <li>Works with almost any AI provider</li>
+          <li>Shows sources for its answers</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Searches for exact words only, so it can miss answers phrased differently</li>
+          <li>Can't read PDFs or documents</li>
+          <li>No human hand-off, no shop features</li>
+          <li>Free AI models can be slow or unreliable</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> blogs and small sites on a zero budget.</p>
+  </article>
+
+  <h2>The big players</h2>
+  <p>These are the most-used AI plugins on WordPress. Most are large toolkits where answering from your content is just one feature among many.</p>
+
+  <article class="plugin">
+    <header>
+      <h3>6. AI Engine</h3>
+      <a href="https://wordpress.org/plugins/ai-engine/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By Jordy Meow</span>
+      <span class="tag">90,000+ sites</span>
+      <span class="tag">Rated 4.9 / 5 (872 reviews)</span>
+    </div>
+    <p>The market leader. A huge AI toolkit: chatbots, a writing assistant, image tools, AI forms, and a way for ChatGPT or Claude to manage your site. It works with every major AI company, including models you run yourself.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Trusted by a huge number of sites</li>
+          <li>Works with any AI provider</li>
+          <li>Your data stays on your server</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Answering from your content is paid</li>
+          <li>It also needs a separate outside search database (like Pinecone), which is hard for beginners</li>
+          <li>Admits the bot can drift into general knowledge</li>
+          <li>Doesn't show visitors where answers came from</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> tech-savvy site owners who want every AI tool in one place.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>7. MxChat</h3>
+      <a href="https://wordpress.org/plugins/mxchat-basic/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">2,000+ sites</span>
+      <span class="tag">Rated 5 / 5 (31 reviews)</span>
+      <span class="tag">Closest to our idea</span>
+    </div>
+    <p>The plugin most like what we want to build. It learns from almost anything (pages, posts, products, PDFs, Word files, links, YouTube videos and hand-written Q&amp;A), stores it inside your own WordPress for free, and updates itself whenever you change content. It matches questions by meaning, not just exact words.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Free, unlimited learning from your content</li>
+          <li>No outside database needed</li>
+          <li>Updates itself automatically</li>
+          <li>Admin can see which pages each answer used</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Visitors don't see the sources</li>
+          <li>Also adds content writing and images, so it's less focused</li>
+          <li>Some past conflicts with caching and Cloudflare</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> anyone who wants a free bot that answers from their site, today.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>8. AI Puffer (formerly AI Power)</h3>
+      <a href="https://wordpress.org/plugins/gpt3-ai-content-generator/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">10,000+ sites</span>
+      <span class="tag">Rated 4.6 / 5 (166 reviews)</span>
+    </div>
+    <p>Another big AI toolkit: chatbot, article writer, automations, forms and images. It can store your content for the chatbot inside WordPress. Learning from PDFs and web links costs extra.</p>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Good at</h4>
+        <ul>
+          <li>Free storage inside WordPress</li>
+          <li>Can use their AI credits, so you don't need your own key</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Watch out for</h4>
+        <ul>
+          <li>Doesn't refresh edited content automatically</li>
+          <li>The bot isn't limited to your content and may make things up</li>
+          <li>PDFs are paid</li>
+        </ul>
+      </div>
+    </div>
+    <p class="best"><strong>Best for:</strong> people who mainly want AI writing tools, with a chatbot on the side.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>9. BetterDocs</h3>
+      <a href="https://wordpress.org/plugins/betterdocs/">View on WordPress.org</a>
+    </header>
+    <div class="tags">
+      <span class="tag">By WPDeveloper</span>
+      <span class="tag">30,000+ sites</span>
+      <span class="tag">Rated 4.8 / 5</span>
+    </div>
+    <p>A popular plugin for building help centres and documentation sites. Its AI chatbot is a paid add-on, and the page doesn't explain how it works.</p>
+    <p class="best"><strong>Why it matters:</strong> tens of thousands of sites already keep their knowledge base in WordPress. A great AI layer on top of that content is an opportunity.</p>
+  </article>
+
+  <article class="plugin">
+    <header>
+      <h3>Also checked</h3>
+    </header>
+    <p><strong>DocsBot</strong> (10+ sites) is a simple connector to an outside AI support service. Everything happens on their platform. <strong>Helpie FAQ</strong> (9,000+ sites) builds FAQ pages and has no AI at all, but its FAQs are exactly the kind of content our bot could answer from.</p>
+  </article>
+
+  <h2>What we've learned so far</h2>
+  <ul class="findings">
+    <li><strong>Most plugins offer the same basics:</strong> collecting visitor contact details, handing over to a human, answering shop questions, speaking several languages and popping up at the right moment.</li>
+    <li><strong>The big difference is how well they understand your content.</strong> Some understand meaning (a question about "shipping cost" finds a page about "delivery fees"). Others only match exact words.</li>
+    <li><strong>Automatic updates are rare.</strong> Only a few plugins notice when you change your content and update themselves.</li>
+    <li><strong>The big names are toolkits, not knowledge-base bots.</strong> AI Engine and AI Puffer do dozens of things. Answering from your content is one feature, often paid or hard to set up.</li>
+    <li><strong>MxChat is the one to beat.</strong> It already answers from your content for free, stores everything inside WordPress and updates itself. "Free and runs on your site" alone won't stand out.</li>
+    <li><strong>What nobody does well yet:</strong>
+      <ul>
+        <li>Showing visitors which page each answer came from</li>
+        <li>Saying "I don't know" instead of guessing</li>
+        <li>Letting the site owner test how well the bot answers</li>
+        <li>Being simple, with knowledge-base answers as its only job</li>
+        <li>Working smoothly with documentation plugins like BetterDocs and Helpie</li>
+      </ul>
+    </li>
+  </ul>
+
+</main>
+</body>
+</html>

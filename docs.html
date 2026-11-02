@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Base Tables</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5b616b;
+    --border: #e3e1da;
+    --accent: #2f6f5e;
+    --accent-soft: #e4f0ec;
+    --warn: #9a5a12;
+    --warn-soft: #fbf0e1;
+    --code-bg: #f0eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b;
+      --surface: #1f2226;
+      --text: #e8e6e1;
+      --muted: #a3a8b0;
+      --border: #33373d;
+      --accent: #7cc2ad;
+      --accent-soft: #1f3530;
+      --warn: #f0b46a;
+      --warn-soft: #3a2b18;
+      --code-bg: #2a2e33;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b;
+    --surface: #1f2226;
+    --text: #e8e6e1;
+    --muted: #a3a8b0;
+    --border: #33373d;
+    --accent: #7cc2ad;
+    --accent-soft: #1f3530;
+    --warn: #f0b46a;
+    --warn-soft: #3a2b18;
+    --code-bg: #2a2e33;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1300px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.4rem; margin: 56px 0 16px; }
+  h3 { font-size: 1.1rem; margin: 32px 0 12px; }
+  p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .lead { color: var(--muted); font-size: 1.1rem; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+
+  code {
+    font: 0.88em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 5px;
+  }
+
+  .note {
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 24px 0;
+  }
+  .note strong { color: var(--accent); }
+  .warn { background: var(--warn-soft); }
+  .warn strong { color: var(--warn); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 720px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child code { font-weight: 600; }
+  .col-type { color: var(--muted); white-space: nowrap; font-size: 0.85rem; }
+  .example { color: var(--muted); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card h3 { margin: 0 0 8px; }
+  .card p { color: var(--muted); font-size: 0.95rem; margin: 0; }
+
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .diagram pre {
+    margin: 0;
+    font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .status { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+
+  @media (max-width: 640px) {
+    main { padding-top: 32px; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Knowledge Base Tables</h1>
+  <p class="lead">How the plugin stores your pages, posts and files so the chatbot can answer from them.</p>
+  <p class="meta">Plugin: Compact Local Chat Bot &amp; Knowledgebase · Last updated 2026-10-28</p>
+
+  <h2>The big picture</h2>
+  <p>The plugin uses two tables.</p>
+  <div class="cards">
+    <div class="card">
+      <h3>Resources</h3>
+      <p>The list of everything in the knowledge base. One row is one page, one post or one file.</p>
+    </div>
+    <div class="card">
+      <h3>Chunks</h3>
+      <p>Each resource cut into small pieces of about 250 words. Every piece has its own "meaning numbers" (embedding).</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Think of a book.</strong> The resources table is the list of books. The chunks table holds the pages cut out of
+    each book. Every page has a label that says which book it came from.
+  </div>
+
+  <h2>How the two tables connect</h2>
+  <p>Every chunk stores the number of its resource in <code>resource_id</code>. One resource has many chunks. One chunk belongs to exactly one resource.</p>
+
+  <div class="diagram">
+<pre>WordPress page (ID 42)  "Shipping Policy"
+        │
+        ▼
+wp_mnaisp_resources
+  id 7 · source_type post · source_id 42 · post_type page · status indexed · chunk_count 4
+        │
+        │  chunks.resource_id = 7
+        ▼
+wp_mnaisp_chunks
+  id 101 · chunk_index 0 · "We ship to all EU countries…"   · [384 numbers]
+  id 102 · chunk_index 1 · "Delivery takes 3–5 days…"       · [384 numbers]
+  id 103 · chunk_index 2 · "Returns are free within…"       · [384 numbers]
+  id 104 · chunk_index 3 · "Contact support at…"            · [384 numbers]</pre>
+  </div>
+
+  <h3>How the plugin uses this link</h3>
+  <ul>
+    <li><strong>View chunks:</strong> show all chunks where <code>resource_id = 7</code>.</li>
+    <li><strong>Re-embed:</strong> replace all chunks of resource 7 at once. The old chunks stay until the new ones are saved.</li>
+    <li><strong>Page deleted:</strong> delete resource 7 and all its chunks.</li>
+    <li><strong>Answering (phase 2):</strong> the search finds chunk 102. Its <code>resource_id</code> leads to resource 7, which gives the title and link for the citation "Shipping Policy".</li>
+  </ul>
+
+  <div class="note warn">
+    <strong>No database foreign key.</strong> The database does not enforce the link. Our code keeps the two tables in step:
+    it never deletes a resource without deleting its chunks. (WordPress's table tool and some cheap hosts don't handle foreign keys well.)
+  </div>
+
+  <h2>Table 1: <code>wp_mnaisp_resources</code></h2>
+  <p>One row for each page, post or file that the admin added to the knowledge base.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td class="col-type">BIGINT</td><td>The unique number of this resource.</td><td class="example">7</td></tr>
+        <tr><td><code>source_type</code></td><td class="col-type">VARCHAR(10)</td><td>Where the content comes from: a WordPress post of any kind, or an uploaded file.</td><td class="example">post · file</td></tr>
+        <tr><td><code>source_id</code></td><td class="col-type">BIGINT</td><td>The ID of that post or file in WordPress.</td><td class="example">42</td></tr>
+        <tr><td><code>post_type</code></td><td class="col-type">VARCHAR(20), can be empty</td><td>The kind of post. Empty for files.</td><td class="example">page · post · product</td></tr>
+        <tr><td><code>title</code></td><td class="col-type">VARCHAR(255)</td><td>The title, shown in the admin list and in citations.</td><td class="example">Shipping Policy</td></tr>
+        <tr><td><code>mime_type</code></td><td class="col-type">VARCHAR(100), can be empty</td><td>The file format. Only for files.</td><td class="example">application/pdf</td></tr>
+        <tr><td><code>status</code></td><td class="col-type">VARCHAR(20)</td><td>Where the resource is in the process. See the list of statuses below.</td><td class="example">indexed</td></tr>
+        <tr><td><code>content_hash</code></td><td class="col-type">CHAR(64), can be empty</td><td>A fingerprint of the text. When the page is saved, a new fingerprint means the text really changed, so the resource is marked outdated.</td><td class="example">9b1e…c04f</td></tr>
+        <tr><td><code>chunk_count</code></td><td class="col-type">INT</td><td>How many chunks this resource has.</td><td class="example">4</td></tr>
+        <tr><td><code>embedding_model</code></td><td class="col-type">VARCHAR(100), can be empty</td><td>The model used for the current chunks.</td><td class="example">Xenova/bge-small-en-v1.5</td></tr>
+        <tr><td><code>embedding_dims</code></td><td class="col-type">SMALLINT, can be empty</td><td>How many numbers each embedding has.</td><td class="example">384</td></tr>
+        <tr><td><code>error_message</code></td><td class="col-type">TEXT, can be empty</td><td>Why the last try failed, shown to the admin.</td><td class="example">PDF has no text (scanned image)</td></tr>
+        <tr><td><code>attempts</code></td><td class="col-type">TINYINT</td><td>How many times processing failed or stopped halfway. A real error (like a scanned PDF) marks it failed right away. A stopped run (tab closed) puts it back in the queue, but after 3 tries it is marked failed. Clicking "Re-embed" sets it back to 0.</td><td class="example">0</td></tr>
+        <tr><td><code>claimed_at</code></td><td class="col-type">DATETIME, can be empty</td><td>When a worker started processing it. If it is still processing after 10 minutes, it goes back to the queue (for example, the browser tab was closed).</td><td class="example">2026-10-28 14:03</td></tr>
+        <tr><td><code>indexed_at</code></td><td class="col-type">DATETIME, can be empty</td><td>When it was last embedded successfully.</td><td class="example">2026-10-28 14:05</td></tr>
+        <tr><td><code>created_at</code></td><td class="col-type">DATETIME</td><td>When it was added to the knowledge base.</td><td class="example">2026-10-28 14:00</td></tr>
+        <tr><td><code>updated_at</code></td><td class="col-type">DATETIME</td><td>When this row last changed.</td><td class="example">2026-10-28 14:05</td></tr>
+      </tbody>
+    </table>
+      <p><strong>No link column.</strong> The link to a page or file is not saved. The plugin looks it up from <code>source_id</code> each time it is needed, so changing permalinks, a slug or the site domain never breaks citation links.</p>
+  </div>
+
+  <h3>Keys</h3>
+  <ul>
+    <li><strong><code>source_type</code> + <code>source_id</code> is unique:</strong> the same page or file can't be added twice.</li>
+    <li><strong>Index on <code>status</code>:</strong> finds queued, failed or outdated items fast.</li>
+    <li><strong>Index on <code>post_type</code>:</strong> filters the list by Pages, Posts or a custom type fast.</li>
+  </ul>
+
+  <h3>Statuses</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><span class="status">queued</span></td><td>Added and waiting to be processed.</td></tr>
+        <tr><td><span class="status">processing</span></td><td>Being cut into chunks and embedded right now.</td></tr>
+        <tr><td><span class="status">indexed</span></td><td>Done. The chatbot can use it.</td></tr>
+        <tr><td><span class="status">failed</span></td><td>Something went wrong. The reason is in <code>error_message</code>.</td></tr>
+        <tr><td><span class="status">outdated</span></td><td>The page changed, or the embedding model changed. The old chunks still work until it is re-embedded.</td></tr>
+        <tr><td><span class="status">paused</span></td><td>The page was unpublished (draft, private or trash). Its chunks are kept but the chatbot never uses them. Publishing it again brings it back, as indexed if nothing changed or outdated if it did.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="meta">"Not indexed" is not stored. Content that has no row in this table is simply not in the knowledge base.</p>
+
+  <h2>Table 2: <code>wp_mnaisp_chunks</code></h2>
+  <p>Small pieces of text, each with its embedding. Example values are from chunk 102 of "Shipping Policy".</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td class="col-type">BIGINT</td><td>The unique number of this chunk.</td><td class="example">102</td></tr>
+        <tr><td><code>resource_id</code></td><td class="col-type">BIGINT</td><td>Which resource this chunk was cut from. This is the link between the two tables.</td><td class="example">7</td></tr>
+        <tr><td><code>chunk_index</code></td><td class="col-type">INT</td><td>The position inside the resource: 0 is the first piece, 1 the second, and so on. Keeps reading order.</td><td class="example">1</td></tr>
+        <tr><td><code>content</code></td><td class="col-type">MEDIUMTEXT</td><td>The text of the piece, about 250 words. The AI answers from this text, and visitors see it in citations.</td><td class="example">Delivery takes 3–5 days…</td></tr>
+        <tr><td><code>heading</code></td><td class="col-type">VARCHAR(255), can be empty</td><td>The nearest heading above this text. Gives the chunk context.</td><td class="example">Delivery times</td></tr>
+        <tr><td><code>page_number</code></td><td class="col-type">INT, can be empty</td><td>The PDF page where this chunk starts, so the citation link opens the right page. Empty for posts and pages.</td><td class="example">3 (PDF only)</td></tr>
+        <tr><td><code>token_count</code></td><td class="col-type">INT</td><td>The size of the text in tokens (pieces of words). The model can read at most 512 tokens, so chunks must stay below that.</td><td class="example">318</td></tr>
+        <tr><td><code>chunk_hash</code></td><td class="col-type">CHAR(64)</td><td>A fingerprint of the model (name + version + settings) + the text sent to the model (title + heading + text). On re-embed, if the fingerprint is the same, the old embedding is reused. This saves time and API cost. The model details are in the fingerprint so a vector is never reused after switching models or model versions.</td><td class="example">a3f9…71be</td></tr>
+        <tr><td><code>embedding</code></td><td class="col-type">BLOB</td><td>Only numbers, no text: 384 numbers that describe the meaning of title + heading + text, stored in compact binary form (1,536 bytes). Search compares these numbers to find chunks with a similar meaning.</td><td class="example">binary data</td></tr>
+        <tr><td><code>embedding_model</code></td><td class="col-type">VARCHAR(100)</td><td>The model that made the embedding. Numbers from different models can't be compared.</td><td class="example">Xenova/bge-small-en-v1.5</td></tr>
+        <tr><td><code>created_at</code></td><td class="col-type">DATETIME</td><td>When this chunk was saved.</td><td class="example">2026-10-28 14:05</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Keys</h3>
+  <ul>
+    <li><strong>Index on <code>resource_id</code>:</strong> finds all chunks of one resource fast.</li>
+    <li><strong>Index on <code>resource_id</code> + <code>chunk_hash</code>:</strong> on re-embed, checks fast if an unchanged chunk already exists.</li>
+    <li><strong>Full-text index on <code>content</code>:</strong> keyword search (phase 2). It finds exact words that meaning search can miss, like a product code "SKU-4471".</li>
+  </ul>
+
+  <h3>What goes into the model vs. what gets stored</h3>
+  <div class="diagram">
+<pre>Text sent to the model (not stored):
+"Shipping Policy › Delivery times › Delivery takes 3–5 days…"
+        │
+        ▼  bge-small-en-v1.5
+embedding column: [0.021, -0.113, 0.087, … 384 numbers]</pre>
+  </div>
+  <ul>
+    <li><strong>Text sent to the model:</strong> title + heading + text. The model turns it into 384 numbers. The extra context makes search better: "Delivery takes 3–5 days" alone doesn't say <em>what</em> is delivered.</li>
+    <li><strong>Only the numbers are stored</strong> in <code>embedding</code>. The column holds no text.</li>
+    <li><strong>The text is stored separately:</strong> <code>content</code> has only the text ("Delivery takes 3–5 days…"), <code>heading</code> has the heading, and the title stays in the resources table. This keeps answers and citations clean.</li>
+    <li>The combined model text is never saved. It can be rebuilt any time from title + heading + content.</li>
+    <li>This is the same for the local model and for an API provider.</li>
+  </ul>
+
+  <h3>How <code>chunk_hash</code> is made</h3>
+  <div class="diagram">
+<pre>model key  = model name : revision : dtype : pooling : normalize
+chunk_hash = sha256( model key + "|" + text sent to the model )
+
+example:
+sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Delivery times › Delivery takes 3–5 days…" )</pre>
+  </div>
+  <ul>
+    <li><strong>Same fingerprint</strong> means the same text and the same model, so the old embedding is reused.</li>
+    <li><strong>The model key is only in the fingerprint.</strong> It is never sent to the model.</li>
+    <li>If the model changes, every fingerprint changes, so no old vector from a different model is ever reused.</li>
+    <li>The same goes for a new version (revision) or precision (dtype) of the same model, for example after a plugin update.</li>
+    <li>The server builds the model key and sends it to the browser, so both sides always use the same one.</li>
+    <li>If the title or heading changes, the fingerprint changes and the chunk is embedded again.</li>
+  </ul>
+
+  <h2>Setting: <code>mnaisp_index_meta</code></h2>
+  <p>A WordPress option (not a table). It remembers exactly how the chunks were embedded:
+    model name, the exact model version (a fixed Hugging Face commit, so every browser downloads the same files),
+    number of dimensions, model precision, pooling, normalizing, and the question prefix.
+    If any of these changes (for example after a plugin update), all indexed items are marked outdated automatically.</p>
+  <div class="note">
+    <strong>Why it matters:</strong> in phase 2, visitor questions must be turned into numbers in exactly the same way.
+    If any setting differs, the question's numbers won't match the chunks' numbers, and search gives bad results.
+  </div>
+
+</main>
+</body>
+</html>
