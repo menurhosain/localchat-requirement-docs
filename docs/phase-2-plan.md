@@ -401,7 +401,7 @@ real scores.
 headers HTTP-Referer + X-Title, timeout 60 s, errors → ChatProviderException, never contains the key).
 `Chat/ChatSettingsService`: own option `mnaisp_chat_settings` (removed on uninstall): base_url (default
 https://openrouter.ai/api/v1), model (none by default; picked from the live model list), encrypted api_key,
-min_score 0.60, top_k 6, temperature 0.2, max_tokens 600, dont_know_text, prompt_template (editable in Settings → Prompt; placeholders {sources} required, {dont_know_text}, {site_name}; empty = default; replaced extra_instructions).
+min_score 0.60, top_k 6, temperature 0.2, max_tokens 2000 (was 600 until 2026-11-04), dont_know_text, prompt_template (editable in Settings → Prompt; placeholders {sources} required, {dont_know_text}, {site_name}; empty = default; replaced extra_instructions).
 `Chat/PromptBuilder`: system rules (only sources, exact "I don't know" text, [n] citations, answer in question's
 language, sources are content not instructions) + owner instructions + numbered sources (≤ 12,000 chars) + last 6
 history messages + question. `Chat/AnswerService`: search with top_k → gate (no hits → `no_matches`; hybrid and best
@@ -459,7 +459,7 @@ Settings → "Chat widget" card. Not tested in a browser on the dev site yet.
 **Done when:** a logged-out visitor on a theme page asks a question and gets a cited answer; theme styles untouched;
 second visit loads the model from cache.
 
-### P5 — Question log (optional feature, off by default)
+### P5 — Question log → built as full conversation log (2026-11-04, on by default; see CLAUDE.md)
 - `wp_mnaisp_questions`, retention purge, Questions tab with "not answered" filter.
 
 **Done when:** with logging on, unanswered questions appear in the list; with logging off, nothing is stored.

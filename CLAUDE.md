@@ -78,6 +78,49 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
   behind VectorStoreInterface (SearchService API stable; MariaDB vector / Redis Stack / Qdrant later = derived index,
   MySQL chunks = source of truth, IndexSync via actions). Hybrid with MySQL FULLTEXT + RRF. "I don't know" gate before
   LLM. Chat LLM via ChatProviderInterface (OpenAI-compatible first). Milestones P0–P6.
+- 2026-11-03: M6 done with OPENROUTER instead of OpenAI (user's call) committed 809ad54. OpenAIProvider removed.
+  OpenRouterProvider (RemoteEmbeddingProviderInterface) uses the Answers key + base URL (user's call: one key). Live model list
+  GET /settings/embedding-models (user's call), dimensions detected by a test call on save -> mnaisp_settings.model_info.
+  Worker still chunks in browser; vectors via POST /jobs/embed (max 32 texts). Visitor/Playground questions for an API index
+  embedded on the server in SearchService (user's call), keyword fallback on failure; SearchQuery.embed=false = keywords only.
+  Answer payload has `mode`. Tested live on dev (then restored backup): text-embedding-3-small 1536 dims, question ~1.2 s,
+  scores lower than bge (0.62 vs ~0.79) -> thresholds need retuning per model. Free NVIDIA nemotron embed endpoints fail on
+  batches >1 (HTTP 500): provider falls back to one text per call on 5xx and remembers it 24 h; API worker batches = 8.
+- 2026-11-04: Empty-answer fix committed abeca45: reasoning model (nemotron free) spent all max_tokens thinking -> empty "answered";
+  now ChatProviderException (finish_reason length explained). Max tokens cap 8000, default 2000 (was 600) committed 4108412.
+  History messages cut to 4000 chars (server + widget) instead of 400. Dev site still has max_tokens 600 saved.
+- 2026-11-04: Conversation log (P5, extended) committed 22b2ecf. User's calls: recording ON by default, retention 90 days,
+  store page URL + logged-in user only (no IP). Schema v3: wp_mnaisp_conversations (uuid from widget) + wp_mnaisp_messages
+  (row saved "pending" before the AI, completed via AnswerResponder on_finish; stopped = stays pending). Option
+  mnaisp_conversation_settings {enabled, retention_days}. Logged-in user read via wp_validate_auth_cookie (widget sends no nonce).
+  Daily cron mnaisp_purge_conversations. Admin tab #/conversations: list, Unanswered questions, viewer drawer, settings card.
+  Privacy-policy text via wp_add_privacy_policy_content. Not yet: GDPR exporter/eraser, 👍/👎, CSV export.
+- 2026-11-04: Select all committed d9fe060: Gmail-style SelectAllBanner (components/SelectAllBanner.tsx) on Add content + Knowledge base.
+  Selection = ids, or {all matching filter, exclude[]}; nothing written until the action. Add content: GET /sources returns `available`
+  (not-added count, WP_Query + LEFT JOIN resources via scoped posts_join/where filters, same search), POST /resources/add-all
+  {type, search, exclude source IDs} -> batches of 500, INSERT IGNORE (ResourceRepository::add_many), confirm dialog.
+  KB: POST /resources/reindex and /resources/delete accept {filter:{status,type,search}, exclude ids}.
+- 2026-11-03: Branch wwc-group-branding (from master): plugin renamed "AI Chatbot By WWC Group", author WWC Group, menu "AI Chatbot".
+  Slug/folder, mnaisp prefix, namespace, text domain, composer package name UNCHANGED. master keeps old name.
+- 2026-11-03: Style tab committed 631b576: admin page #/style (pages/Style.tsx) = main colour, position, colors, text_styles in
+  grouped cards + live preview (widget/Preview.tsx, real widget CSS in Shadow DOM). Settings → Chat widget = texts/behaviour/limits only.
+  Shared widget bits: widget/parts.tsx (Bubble, noteWithLinks), widget/styles.ts (css, registerProperties). Preview launcher duplicates loader.ts look.
+- 2026-11-03: Widget colours committed 3fd4bcb: setting colors {header, background, input_area, border, send,
+  visitor_bubble, bot_bubble, launcher: #hex | ''}, sent as widget.colors, vars --mnaisp-c-<key> (_ as -), classes .mnaisp-c-*.
+  '' = default (main colour or fixed). Border default now #e5e5e5 (was Tailwind v4 currentColor = near black, a bug).
+- 2026-11-03: Text styles + px committed b867df5: widget setting text_styles {key: {size px 10–32 | 0, color #hex | ''}} for
+  title, bot, visitor, suggestions, input, send, sources, notes, footer, launcher; sent as widget.textStyles, widget sets
+  --mnaisp-<key>-size/-color on #mnaisp-root, fallbacks in widget.css (.mnaisp-t-*). Widget CSS = px only (user's call: themes
+  with small html font-size broke rem): tools/postcss-rem-to-px.js converts all rem (incl. Tailwind) in widget.css only; admin keeps rem.
+- 2026-11-03: "Smart search on visitor devices" no_mobile_data CHANGED (user's call, after iPhone tab crashes ~60 MB model+ORT
+  jsep wasm): saveData or cellular = keywords; type known (wifi/ethernet) = download; otherwise download only on DESKTOP
+  (userAgentData.mobile===false, else UA without Android/iPhone/iPad/Mobile and not Mac+touch=iPad). Desktop Safari/Firefox
+  download (user's call: desktops have the memory); iPhone/iPad/Firefox Android = keywords. Now DEFAULT for new installs.
+  Committed 064c8be.
+- 2026-11-03: Footer note committed 94fce5c: widget setting footer_note (default old fixed text, ≤300 chars, '' = none), sent as
+  widget.footerNote; links as [text](https://…) only (PHP rejects non-http(s), no HTML; widget renders <a target=_blank rel=noopener>).
+- 2026-11-03: Launcher label committed e748a2f: widget setting launcher_label (default "Ask AI", ≤30 chars, '' = none), sent as
+  widget.launcherLabel in /chat/config; pill above the floating button, click opens chat, hidden while open, aria-hidden.
 - 2026-11-02: Suggested questions committed 82b3bcf: widget setting suggested_questions (max 6, ≤150 chars, one per line in admin), sent as widget.suggestions in /chat/config; shown as buttons until the first message (again after ↺). Welcome message now optional.
 - 2026-11-02: Widget Stop button committed acaaecc: Send becomes Stop while busy; AbortController aborts fetch/stream (and model wait); entry state "stopped" keeps partial text, never sent as history; ↺ also stops. Enter while busy no longer clears the input.
 - 2026-11-02: Widget Markdown: keep the small own renderer (paragraphs, lists, **bold**, [n]); no extension, no react-markdown (user's call).
@@ -135,7 +178,7 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 ## Files in This Dir
 - `CLAUDE.md` — this memory file
 - `plugins/` — one detailed note per researched plugin
-- `docs.html` — plain-language doc of DB schema (resources + chunks tables); update when schema changes
+- `docs.html` — plain-language doc of DB schema (resources, chunks, conversations, messages tables); update when schema changes
 - `plugin-comparison.html` — plain-language comparison page (update when new plugins added)
 - Plugin code: `~/Desktop/dev-site/wp/wp-content/plugins/compact-local-chatbot/` (README.md there)
 - Dev site: http://localhost (nginx + local MariaDB, NOT the docker compose in ~/Desktop/dev-site). WP-CLI works: `cd ~/Desktop/dev-site/wp && wp eval-file x.php --user=1`
@@ -143,4 +186,5 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/phase-1-plan.md` — phase 1 (indexing) plan: architecture, DB schema, REST API, pipeline, UI, milestones M0–M8
 - `docs/phase-2-plan.md` — phase 2 (search + answers + widget) plan, milestones P0–P6
 - `docs/source-selection.md` — how chunks are chosen and sent to the AI (gate, filter, whole page, prompt), worked example; update when AnswerService/PageExpander change
+- `docs/chunking.md` — how content becomes chunks + vectors (extract, chunker rules, hash reuse, embed, store, example); update when chunker.ts / ContentExtractor change
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes

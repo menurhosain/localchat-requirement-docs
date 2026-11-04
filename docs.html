@@ -302,6 +302,49 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
     If any setting differs, the question's numbers won't match the chunks' numbers, and search gives bad results.
   </div>
 
+  <h2>Table 3: <code>wp_mnaisp_conversations</code></h2>
+  <p>One row per visitor chat (added in schema v3). Shown in the admin under <strong>Conversations</strong>. Only filled while
+    "Record visitor conversations" is on; deleted automatically after the retention period (default 90 days).</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td class="col-type">BIGINT</td><td>The unique number of this conversation.</td><td class="example">12</td></tr>
+        <tr><td><code>uuid</code></td><td class="col-type">CHAR(36)</td><td>Random ID made by the chat widget when a chat starts (new after ↺). Groups the questions of one chat.</td><td class="example">3f2c…-9a1e</td></tr>
+        <tr><td><code>page_url</code></td><td class="col-type">VARCHAR(500), can be empty</td><td>The page the chat started on. Only links to this site are kept.</td><td class="example">https://example.com/contact/</td></tr>
+        <tr><td><code>user_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The WordPress user, if the visitor was logged in. Empty = guest. No IP address is stored.</td><td class="example">empty</td></tr>
+        <tr><td><code>message_count</code></td><td class="col-type">INT</td><td>How many questions the chat has.</td><td class="example">4</td></tr>
+        <tr><td><code>unanswered_count</code></td><td class="col-type">INT</td><td>How many of them got "I don't know". Drives the "not answered" badge.</td><td class="example">1</td></tr>
+        <tr><td><code>started_at</code> / <code>last_message_at</code></td><td class="col-type">DATETIME</td><td>First and latest question. Retention counts from the latest one.</td><td class="example">2026-11-04 08:44</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Table 4: <code>wp_mnaisp_messages</code></h2>
+  <p>One row per question and its answer. The row is saved before the AI runs ("pending") and completed when the answer is
+    done, so a question is kept even when the visitor stops the answer or leaves.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>conversation_id</code></td><td class="col-type">BIGINT</td><td>Which conversation the question belongs to.</td><td class="example">12</td></tr>
+        <tr><td><code>question</code> / <code>answer</code></td><td class="col-type">TEXT / MEDIUMTEXT</td><td>What the visitor asked and what the chatbot answered (the server's own copy, never the history the browser sends).</td><td class="example">Do you ship abroad?</td></tr>
+        <tr><td><code>status</code></td><td class="col-type">VARCHAR(20)</td><td><code>answered</code>, <code>dont_know</code>, <code>error</code>, or <code>pending</code> (stopped before the answer finished).</td><td class="example">dont_know</td></tr>
+        <tr><td><code>reason</code></td><td class="col-type">VARCHAR(40), can be empty</td><td>Why "I don't know": nothing matched, best match too weak, no source close enough, or the AI found no answer.</td><td class="example">below_threshold</td></tr>
+        <tr><td><code>mode</code> / <code>top_score</code></td><td class="col-type">VARCHAR / FLOAT</td><td>Meaning + keyword search or keyword only, and the best meaning score.</td><td class="example">hybrid / 0.48</td></tr>
+        <tr><td><code>sources</code></td><td class="col-type">LONGTEXT (JSON)</td><td>Cited sources, every chunk the search found with its scores, and what was sent to the AI. Shows why a question failed.</td><td class="example">{"cited":[…],"found":[…]}</td></tr>
+        <tr><td><code>model</code>, <code>prompt_tokens</code>, <code>completion_tokens</code>, <code>ms</code></td><td class="col-type">VARCHAR / INT</td><td>Which AI answered, how many tokens it used, and how long it took.</td><td class="example">gpt-4o-mini, 1840, 96, 2300</td></tr>
+        <tr><td><code>error_message</code></td><td class="col-type">TEXT, can be empty</td><td>What went wrong, for <code>error</code> rows.</td><td class="example">HTTP 429…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
 </main>
 </body>
 </html>
