@@ -23,6 +23,19 @@ Claude's role: research assistant.
   Tests postponed by user ("will write test later") — don't write new tests until asked.
   "Test connection" button = disabled markup; wire up in M4 (local) + M6 (OpenAI), noted in plan.
   Pending: user activates + tests manually. E2E tests DEFERRED (user's call 2026-10-28) — don't write e2e specs until asked.
+- 2026-11-09: Phase 1 + 2 working. NEW GOAL: make plugin commercially sellable. Requirements + research written:
+  `docs/commercial-requirements.md` (gaps, customer problems, P0/P1/P2 features, Free vs Pro, open questions). Awaiting user's answers.
+- 2026-11-09: Two client proposals drafted in `docs/proposals/`: (1) self-hosted + BYO AI key + yearly license,
+  (2) managed AI subscription (our AI gateway pays tokens, OpenRouter key removed from plugin, embedding stays local).
+  Hybrid (P2 default + BYO key) noted. User's call: NO timeline or money in proposals. proposals.html = both proposals,
+  feature table per proposal (P1 Free/Pro, P2 vs P1), competitor matrix.
+- 2026-11-09: proposals.html REWRITTEN for non-technical client (user's call): ONE shared list of 12 top-level features,
+  per proposal only architecture-specific additions + good/less good, no compare table, no money/timeline.
+  NEW confirmed feature: LIVE CHAT TAKEOVER (admin takes over from dashboard, visitor sees admin replies, AI silent
+  until "Hand back to AI"). In commercial-requirements.md as D5 (now P0).
+- 2026-11-09: NEW confirmed feature: SMART SALES ALERTS (D6): owner sets situations, AI detects them in chat (+ Woo cart/
+  order signals), sends email/Telegram/Slack alert with summary + Take over link. Highlighted box in proposals.html
+  after takeover; feature 05 now "Made for WooCommerce".
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -86,6 +99,8 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
   Answer payload has `mode`. Tested live on dev (then restored backup): text-embedding-3-small 1536 dims, question ~1.2 s,
   scores lower than bge (0.62 vs ~0.79) -> thresholds need retuning per model. Free NVIDIA nemotron embed endpoints fail on
   batches >1 (HTTP 500): provider falls back to one text per call on 5xx and remembers it 24 h; API worker batches = 8.
+- 2026-11-04: master merged into wwc-group-branding (30a4a43, clean) + 73d580d (privacy-policy text uses WWC name). New user-facing
+  plugin-name strings on master need the WWC name on that branch after each merge (git grep "Compact Local Chat Bot").
 - 2026-11-04: Empty-answer fix committed abeca45: reasoning model (nemotron free) spent all max_tokens thinking -> empty "answered";
   now ChatProviderException (finish_reason length explained). Max tokens cap 8000, default 2000 (was 600) committed 4108412.
   History messages cut to 4000 chars (server + widget) instead of 400. Dev site still has max_tokens 600 saved.
@@ -187,4 +202,6 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/phase-2-plan.md` — phase 2 (search + answers + widget) plan, milestones P0–P6
 - `docs/source-selection.md` — how chunks are chosen and sent to the AI (gate, filter, whole page, prompt), worked example; update when AnswerService/PageExpander change
 - `docs/chunking.md` — how content becomes chunks + vectors (extract, chunker rules, hash reuse, embed, store, example); update when chunker.ts / ContentExtractor change
+- `docs/commercial-requirements.md` — what to add to sell commercially: gaps vs competitors, forum/review pain points, prioritized requirements, release plan
+- `docs/proposals/` — client proposals: proposal-1-self-hosted-license.md, proposal-2-managed-ai-subscription.md, proposals.html (client page)
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes

@@ -84,6 +84,9 @@ Kept, in order: **A, C, E, B**.
 
 If nothing is kept, the visitor gets "I don't know" (reason `no_relevant_sources`), again with no AI call.
 
+> In keyword-only mode (no question vector) this filter is skipped too: there are no meaning scores, so **every**
+> search hit is kept (up to `top_k`). See "How many chunks reach the AI" below.
+
 ### Step 4 — Page expander (small-to-big)
 
 Search works best with small chunks, but the answer often needs the text around them. So each kept chunk is checked:
@@ -153,6 +156,83 @@ The visitor sees only the **cited** sources: here **[1] Shipping** with its link
 is not shown.
 
 If the AI replies with the "I don't know" text, the visitor gets that text without sources (reason `model_dont_know`).
+
+---
+
+## How many chunks reach the AI
+
+It depends on the **mode** of the search. The mode is set by the question vector:
+
+- **Hybrid** (meaning + keywords): the visitor's browser embedded the question (or the server did, for an API
+  index). The normal case.
+- **Keyword only:** no vector (`vector: null`). The browser model was not allowed on this device (phone without a
+  known Wi-Fi connection, data saver), failed to load, or the visitor clicked "Answer now" while it was loading.
+  The mode is shown to the admin per answer in Conversations, never to the visitor.
+
+### The two caps
+
+1. **`top_k` caps the total.** Search merges both lists and keeps only the best `top_k` (default 6, max 12) *before*
+   the source filter runs. Nothing outside those `top_k` can be sent, however many chunks matched.
+2. **Hybrid only: keyword-only chunks are capped at 3.** A chunk passes the filter with meaning ≥ 0.60 (no limit on
+   how many) or keyword rank 1–3 (`KEYWORD_KEEP`). So chunks that are strong only by keywords never exceed 3.
+
+### Hybrid mode
+
+Each search returns up to 20 candidates (`SearchService::CANDIDATES`), merged into the top `top_k`. "Meaning finds
+N" below = N chunks with a meaning score ≥ 0.60 (meaning search always returns candidates; only the score decides).
+
+| Meaning finds (≥ 0.60) | Keyword finds | Sent (`top_k` 6) |
+|---|---|---|
+| 0 | 20 | **Nothing**: the gate says "I don't know" (best meaning < 0.60), no AI call |
+| 1 | 20 | Up to 4: 1 meaning + up to 3 keyword-only |
+| 2 | 20 | Up to 5: 2 + 3 |
+| 3 | 20 | Up to 6: 3 + 3 |
+| 6 | 20 | 6, possibly all by meaning |
+| 100 | 20 | Still at most 6 |
+
+Fewer are sent when one chunk is both meaning-strong and keyword top 3 (counted once), or when a top-3 keyword chunk
+did not make the merged top `top_k`. Keyword rank 4 and below with meaning < 0.60: never sent, even inside the top 6.
+
+**Keywords can't rescue a question in hybrid mode.** If no chunk reaches 0.60 by meaning, the gate stops it, even
+when keyword search found 20 exact-word matches.
+
+### Keyword-only mode
+
+| Step | Hybrid | Keyword only |
+|---|---|---|
+| Gate (step 2) | Best meaning score must be ≥ `min_score` | Only "no matches at all" stops it |
+| Source filter (step 3) | Meaning ≥ 0.60 **or** keyword rank 1–3 | **Every** hit passes |
+| Most chunks sent | `top_k` | `top_k` |
+
+So with `top_k` 6 and a question that matches many chunks, the **6 best keyword chunks** (by MySQL FULLTEXT
+relevance) are all sent. Fewer when the search finds fewer than `top_k`.
+
+Weak spot: FULLTEXT also matches chunks that share only one common word with the question, and nothing filters them
+here. The AI then usually answers with the "I don't know" text (one paid call), or rarely stretches an answer from
+weak sources. A small `top_k` limits this.
+
+### After the filter (both modes)
+
+- **Page expander (step 4):** chunks of the same short page (≤ 4,000 characters) become one whole-page source, so
+  6 chunks can become fewer sources.
+- **Text limit (step 5):** 12,000 characters for all sources. 6 normal chunks (~1,500 characters each) fit; several
+  whole short pages may not, and then the lowest-ranked sources are left out (the first is always kept).
+
+### Edge case: meaning-strong chunks lost in the merge
+
+Reciprocal Rank Fusion scores each chunk `1 / (60 + rank)` per list it appears in (`search-flow.md`). With 20
+candidates per list:
+
+- found by **both** searches: at least `1/80 + 1/80 = 0.025`;
+- found by **one** search: at most `1/61 ≈ 0.016`.
+
+So every chunk found by both searches ranks above every chunk found by only one. If 6 or more chunks appear in both
+lists, a chunk that is strong by meaning but contains none of the question's words (synonyms: question "O-ring seal",
+page says "gasket") falls out of the top 6 **before** the filter, and is not sent even with meaning 0.80. Rare,
+because meaning-strong chunks usually share words with the question.
+
+Possible guard (not built, 2026-11-04): always keep chunks with meaning ≥ `source_min_score`, even outside the merged
+top `top_k`.
 
 ---
 

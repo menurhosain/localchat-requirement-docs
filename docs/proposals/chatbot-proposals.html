@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Base Chatbot Proposals</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5b616b;
+    --border: #e3e1da;
+    --accent: #2f6f5e;
+    --accent-soft: #e4f0ec;
+    --p2: #3d5a9e;
+    --p2-soft: #e6ecf8;
+    --star: #a25a0f;
+    --star-soft: #fcefdc;
+    --good: #2f6f3e;
+    --bad: #a23b3b;
+    --bubble-ai: #eef0f3;
+    --bubble-human: #fcefdc;
+    --bubble-visitor: #2f6f5e;
+    --bubble-visitor-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b;
+      --surface: #1f2226;
+      --text: #e8e6e1;
+      --muted: #a3a8b0;
+      --border: #33373d;
+      --accent: #7cc2ad;
+      --accent-soft: #1f3530;
+      --p2: #9db4ea;
+      --p2-soft: #222b3d;
+      --star: #f0b46a;
+      --star-soft: #3a2b18;
+      --good: #8fd19e;
+      --bad: #f09a9a;
+      --bubble-ai: #2a2e34;
+      --bubble-human: #3a2b18;
+      --bubble-visitor: #2f6f5e;
+      --bubble-visitor-text: #ffffff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b;
+    --surface: #1f2226;
+    --text: #e8e6e1;
+    --muted: #a3a8b0;
+    --border: #33373d;
+    --accent: #7cc2ad;
+    --accent-soft: #1f3530;
+    --p2: #9db4ea;
+    --p2-soft: #222b3d;
+    --star: #f0b46a;
+    --star-soft: #3a2b18;
+    --good: #8fd19e;
+    --bad: #f09a9a;
+    --bubble-ai: #2a2e34;
+    --bubble-human: #3a2b18;
+    --bubble-visitor: #2f6f5e;
+    --bubble-visitor-text: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; }
+  h2 { font-size: 1.5rem; margin: 64px 0 12px; scroll-margin-top: 16px; }
+  h3 { font-size: 1.1rem; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .lead { color: var(--muted); font-size: 1.1rem; max-width: 60em; }
+  .meta { color: var(--muted); font-size: 0.9rem; }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  nav.toc a {
+    text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px; font-size: 0.92rem;
+  }
+  nav.toc a:hover { border-color: var(--accent); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .today { display: flex; flex-wrap: wrap; gap: 8px; }
+  .today span {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: 0.92rem;
+  }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .features .card h3 { display: flex; gap: 10px; align-items: baseline; }
+  .features .num { color: var(--accent); font-weight: 700; font-size: 0.9rem; min-width: 1.4em; }
+
+  /* highlighted takeover feature */
+  .star {
+    border: 2px solid var(--star);
+    background: var(--star-soft);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 0 0 18px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .badge {
+    display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+    background: var(--star); color: var(--surface); padding: 3px 10px; border-radius: 999px; margin-bottom: 10px;
+  }
+  .star h3 { font-size: 1.35rem; margin-bottom: 10px; }
+  .star.alerts { border-color: var(--p2); background: var(--p2-soft); }
+  .star.alerts .badge { background: var(--p2); }
+  .star ul.sits { margin: 12px 0 0; padding-left: 20px; }
+  .star .sub { margin: 16px 0 4px; font-weight: 700; font-size: 0.95rem; }
+  .notify {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; font-size: 0.9rem; display: flex; flex-direction: column; gap: 10px;
+  }
+  .notify .head { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.78rem; }
+  .notify .title { font-weight: 700; font-size: 1rem; }
+  .notify .row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
+  .notify .row span:first-child { color: var(--muted); }
+  .notify .quote { background: var(--bg); border-radius: 8px; padding: 8px 10px; font-style: italic; }
+  .notify .btn {
+    align-self: flex-start; background: var(--p2); color: var(--surface); font-weight: 600;
+    border-radius: 8px; padding: 6px 14px; font-size: 0.85rem;
+  }
+  .channels { display: flex; gap: 6px; flex-wrap: wrap; }
+  .channels span { font-size: 0.75rem; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; background: var(--surface); }
+  .star ol { margin: 12px 0 0; padding-left: 22px; }
+  .star ol li { margin: 6px 0; }
+
+  .chat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;
+  }
+  .chat .who { font-size: 0.72rem; color: var(--muted); margin-bottom: 2px; }
+  .msg { max-width: 82%; padding: 8px 12px; border-radius: 12px; line-height: 1.4; }
+  .msg.visitor { align-self: flex-end; background: var(--bubble-visitor); color: var(--bubble-visitor-text); border-bottom-right-radius: 4px; }
+  .msg.ai { align-self: flex-start; background: var(--bubble-ai); border-bottom-left-radius: 4px; }
+  .msg.human { align-self: flex-start; background: var(--bubble-human); border: 1px solid var(--star); border-bottom-left-radius: 4px; }
+  .sys { align-self: center; font-size: 0.78rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 12px; text-align: center; }
+  .sys.on { color: var(--star); font-weight: 600; }
+
+  /* proposals */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .proposal { border-top: 5px solid var(--accent); }
+  .proposal.two { border-top-color: var(--p2); }
+  .tag {
+    display: inline-block; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+    padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+  }
+  .two .tag { background: var(--p2-soft); color: var(--p2); }
+  .proposal h3 { font-size: 1.3rem; margin: 10px 0 6px; }
+  .proposal > p { color: var(--muted); font-size: 0.97rem; margin-bottom: 14px; }
+  .proposal h4 { margin: 18px 0 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+  .flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; }
+  .step {
+    flex: 1 1 110px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; font-size: 0.85rem; text-align: center;
+  }
+  .step b { display: block; }
+  .step.ours { border-color: var(--p2); background: var(--p2-soft); }
+  .arrow { align-self: center; padding: 0 6px; color: var(--muted); }
+
+  .adds { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .adds li {
+    margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
+    font-size: 0.93rem;
+  }
+  .adds li b { display: block; }
+  .adds li span { color: var(--muted); }
+
+  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pc ul { font-size: 0.92rem; }
+  .pc .plus h4 { color: var(--good); }
+  .pc .minus h4 { color: var(--bad); }
+
+  .note { background: var(--p2-soft); border-radius: 10px; padding: 14px 18px; margin: 20px 0 0; font-size: 0.95rem; }
+
+  .why { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+  footer { margin-top: 64px; color: var(--muted); font-size: 0.85rem; }
+
+  @media (max-width: 900px) {
+    .features { grid-template-columns: 1fr 1fr; }
+    .grid2, .star, .why { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .features, .pc { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+    .arrow { width: 100%; text-align: center; transform: rotate(90deg); padding: 2px 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <p class="meta">Draft · 9 November 2026</p>
+  <h1>AI Knowledge Base Chatbot for WordPress</h1>
+  <p class="lead">
+    A chatbot that answers visitor questions from the website's own content, shows where each answer comes from,
+    and says "I don't know" instead of guessing. The core is built and working. This page shows what we will add,
+    and two ways to offer it to customers.
+  </p>
+  <nav class="toc">
+    <a href="#today">Already built</a>
+    <a href="#features">What we will add</a>
+    <a href="#takeover">Live chat takeover</a>
+    <a href="#alerts">Smart sales alerts</a>
+    <a href="#proposals">The two proposals</a>
+    <a href="#why">Why customers choose us</a>
+  </nav>
+</header>
+
+<section id="today">
+  <h2>Already built</h2>
+  <div class="today">
+    <span>Learns from pages, posts, PDF and Word files</span>
+    <span>Answers only from the website's content</span>
+    <span>Shows source links with every answer</span>
+    <span>Says "I don't know" instead of guessing</span>
+    <span>Chat window with custom colours and texts</span>
+    <span>Test area to try questions before going live</span>
+    <span>Log of all visitor conversations</span>
+    <span>List of questions the bot couldn't answer</span>
+  </div>
+</section>
+
+<section id="features">
+  <h2>What we will add</h2>
+  <p class="meta">These features are part of both proposals.</p>
+
+  <div class="star" id="takeover">
+    <div>
+      <span class="badge">★ NEW · LIVE CHAT TAKEOVER</span>
+      <h3>A real person can step into any chat</h3>
+      <p>The AI answers visitors on its own. When the site owner or their team sees a conversation that needs a
+        human touch, they can take it over from the dashboard and reply themselves.</p>
+      <ol>
+        <li>A visitor is chatting and the AI is answering.</li>
+        <li>In the dashboard, a team member opens the live chat and clicks <b>Take over</b>.</li>
+        <li>The visitor sees that a team member has joined. Everything the team member writes appears in the visitor's chat.</li>
+        <li>While a person is in charge, <b>the AI stays silent</b> and doesn't answer automatically.</li>
+        <li>When done, the team member clicks <b>Hand back to AI</b>, and the chatbot answers again.</li>
+      </ol>
+    </div>
+    <div class="chat" aria-label="Example chat with a takeover">
+      <div class="msg visitor">Do you deliver to Canada?</div>
+      <div class="msg ai"><div class="who">AI assistant</div>Yes, we ship to Canada in 5–7 days. Source: Shipping page</div>
+      <div class="msg visitor">My order arrived damaged, what can I do?</div>
+      <div class="sys on">Sarah from the team joined the chat</div>
+      <div class="msg human"><div class="who">Sarah · team</div>Sorry about that! I've sent a replacement today, no need to return the damaged one.</div>
+      <div class="msg visitor">Thank you!</div>
+      <div class="sys">Chat handed back to the AI assistant</div>
+    </div>
+  </div>
+
+  <div class="star alerts" id="alerts">
+    <div>
+      <span class="badge">★ NEW · SMART SALES ALERTS</span>
+      <h3>The AI tells you when a visitor is ready to buy</h3>
+      <p>The owner describes the situations that matter, in plain words. The AI watches every conversation.
+        When a situation happens, it sends an instant message to the team by <b>email, Telegram or Slack</b>,
+        with a short summary and a <b>Take over</b> link. The team joins the chat live and turns the visitor
+        into a customer.</p>
+
+      <p class="sub">Example situations the owner can set</p>
+      <ul class="sits">
+        <li>Visitor asks about a bulk order, a quote or a business price</li>
+        <li>Visitor asks for a discount or coupon</li>
+        <li>Visitor asks to speak to a person</li>
+        <li>Visitor is unhappy or complaining</li>
+        <li>The AI couldn't answer a question twice in a row</li>
+      </ul>
+
+      <p class="sub">Extra situations for WooCommerce shops</p>
+      <ul class="sits">
+        <li>Visitor has a large cart but hasn't checked out</li>
+        <li>Visitor keeps asking about the same product (price, size, delivery)</li>
+        <li>Visitor asks about a product that is out of stock</li>
+        <li>Visitor seems stuck at checkout or asks about payment</li>
+        <li>A returning customer is back with a question</li>
+      </ul>
+      <p style="margin-top:14px">Works together with <a href="#takeover">Live chat takeover</a>: the alert brings
+        the team in at the right moment.</p>
+    </div>
+    <div class="notify" aria-label="Example alert message">
+      <div class="head"><span>Telegram · AI Chatbot</span><span>just now</span></div>
+      <div class="title">🔥 Possible sale: bulk order question</div>
+      <div class="row"><span>Situation</span><span>Visitor asks about a bulk order</span></div>
+      <div class="row"><span>Visitor</span><span>Guest from Toronto, 3rd visit this week</span></div>
+      <div class="row"><span>Cart</span><span>12 × Bamboo Water Bottle</span></div>
+      <div class="quote">"If I order 50 bottles for my company, can you do a better price and print our logo?"</div>
+      <div class="row"><span>AI summary</span><span>Business buyer, wants 50 units with custom logo. AI shared shipping info, couldn't answer pricing.</span></div>
+      <span class="btn">Take over chat →</span>
+      <div class="channels"><span>Email</span><span>Telegram</span><span>Slack</span></div>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="card"><h3><span class="num">01</span>Always up to date</h3><p>When a page is edited, added or deleted, the chatbot's knowledge updates on its own.</p></div>
+    <div class="card"><h3><span class="num">02</span>Learns from more content</h3><p>Help docs, FAQs, products and other website content, plus answers the owner types in directly.</p></div>
+    <div class="card"><h3><span class="num">03</span>Speaks many languages</h3><p>Visitors can ask in their own language and get answers in it.</p></div>
+    <div class="card"><h3><span class="num">04</span>Help when the bot can't answer</h3><p>Visitors get a way to reach the team: contact buttons, a short form, or a live takeover.</p></div>
+    <div class="card"><h3><span class="num">05</span>Made for WooCommerce</h3><p>Answers questions about products, prices, stock and delivery straight from the shop.</p></div>
+    <div class="card"><h3><span class="num">06</span>Reports and improvement</h3><p>See what visitors ask, which answers they liked, and which topics are missing from the website.</p></div>
+    <div class="card"><h3><span class="num">07</span>One-click answer fixes</h3><p>Turn a bad or missing answer into a correct one straight from the conversation log.</p></div>
+    <div class="card"><h3><span class="num">08</span>Members-only answers</h3><p>Some content is answered only to logged-in members or customers.</p></div>
+    <div class="card"><h3><span class="num">09</span>Show the chat where you want</h3><p>Choose which pages and visitors see the chat; place it inside pages; own name, logo and look.</p></div>
+    <div class="card"><h3><span class="num">10</span>Spam and misuse protection</h3><p>Blocks bots and abuse, and limits how much each visitor can use.</p></div>
+    <div class="card"><h3><span class="num">11</span>Privacy built in</h3><p>Visitor data can be exported or deleted on request, with a consent notice. Ready for GDPR.</p></div>
+    <div class="card"><h3><span class="num">12</span>Easy setup, reliable</h3><p>A guided setup in a few minutes, tested with popular themes and plugins, security reviewed.</p></div>
+  </div>
+</section>
+
+<section id="proposals">
+  <h2>The two proposals</h2>
+  <p class="meta">Both include all the features above. The only difference is <b>who provides the AI</b> and what that needs.</p>
+
+  <div class="grid2">
+    <div class="card proposal">
+      <span class="tag">PROPOSAL 1</span>
+      <h3>Customer uses their own AI account</h3>
+      <p>Everything runs on the customer's website. They connect their own AI account (such as OpenAI or Google)
+        and buy a license from us for the full version.</p>
+      <div class="flow">
+        <div class="step"><b>Visitor</b>asks</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Website</b>finds content</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Customer's AI account</b>writes answer</div>
+      </div>
+
+      <h4>What we add for this option</h4>
+      <ul class="adds">
+        <li><b>Choice of AI provider</b><span>Works with OpenAI, Anthropic, Google and others. The customer pastes their own key.</span></li>
+        <li><b>Usage limits</b><span>Caps so the customer's AI account is never overused.</span></li>
+        <li><b>License and automatic updates</b><span>A license key unlocks the full version and keeps it updated.</span></li>
+        <li><b>Free and full versions</b><span>A free version on WordPress.org, with an upgrade to the full version.</span></li>
+      </ul>
+
+      <h4>Good and less good</h4>
+      <div class="pc">
+        <div class="plus"><h4>Good</h4><ul>
+          <li>Data goes only to the customer's own AI account</li>
+          <li>Customer chooses the AI</li>
+          <li>Nothing for us to keep running</li>
+        </ul></div>
+        <div class="minus"><h4>Less good</h4><ul>
+          <li>Setting up an AI account is hard for non-technical owners</li>
+          <li>Customer manages a separate AI bill</li>
+          <li>Many competitors already work this way</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="card proposal two">
+      <span class="tag">PROPOSAL 2</span>
+      <h3>We provide the AI as a subscription</h3>
+      <p>The website's content stays on the customer's website. The answering AI runs through our own service, so
+        the customer never needs an AI account. They connect their site and subscribe.</p>
+      <div class="flow">
+        <div class="step"><b>Visitor</b>asks</div>
+        <div class="arrow">→</div>
+        <div class="step"><b>Website</b>finds content</div>
+        <div class="arrow">→</div>
+        <div class="step ours"><b>Our AI service</b>writes answer</div>
+      </div>
+
+      <h4>What we add for this option</h4>
+      <ul class="adds">
+        <li><b>Our AI service</b><span>Answers come through our servers. No AI account or key for the customer.</span></li>
+        <li><b>One-click connect</b><span>The customer links their website to their account in one step.</span></li>
+        <li><b>Plans and usage meter</b><span>Shows how much of the plan is used, with a reminder before it runs out.</span></li>
+        <li><b>Customer account page</b><span>Plans, invoices and connected websites in one place.</span></li>
+        <li><b>Backup AI</b><span>If one AI company has an outage, answers switch to another automatically.</span></li>
+        <li><b>Data agreement</b><span>A signed privacy agreement and an EU hosting option for customers who need it.</span></li>
+      </ul>
+
+      <h4>Good and less good</h4>
+      <div class="pc">
+        <div class="plus"><h4>Good</h4><ul>
+          <li>Easiest setup: works in minutes</li>
+          <li>One subscription, no separate AI bill</li>
+          <li>We improve answer quality for everyone at once</li>
+        </ul></div>
+        <div class="minus"><h4>Less good</h4><ul>
+          <li>We keep a service running at all times</li>
+          <li>We are responsible for the data passing through it</li>
+          <li>Some buyers prefer their own AI account</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Both together?</b> Proposal 2 could be the default ("works out of the box"), with an option for agencies to
+    use their own AI account as in Proposal 1.
+  </div>
+</section>
+
+<section id="why">
+  <h2>Why customers choose us</h2>
+  <div class="why">
+    <div class="card"><h3>Honest answers</h3><p>Answers only from the website and says "I don't know" when unsure. Many other chatbots make things up.</p></div>
+    <div class="card"><h3>Shows its sources</h3><p>Every answer links to the page it came from, so visitors can check it. Few competitors do this.</p></div>
+    <div class="card"><h3>AI and people together</h3><p>The AI handles everyday questions; a team member can take over any chat live and hand it back.</p></div>
+    <div class="card"><h3>Turns chats into sales</h3><p>Smart alerts tell the team the moment a visitor looks ready to buy, so no hot lead is missed.</p></div>
+    <div class="card"><h3>Content stays on the website</h3><p>No outside database. The website's knowledge stays where it belongs.</p></div>
+    <div class="card"><h3>Gets better over time</h3><p>Reports show what visitors ask and what's missing, and bad answers are fixed in one click.</p></div>
+    <div class="card"><h3>Focused and simple</h3><p>Built to answer questions well, not a big AI toolbox with dozens of settings.</p></div>
+  </div>
+</section>
+
+<footer>
+  Based on research of WordPress chatbot plugins (AI Engine, MxChat, AI Puffer, WPBot, Jotform, WebChatAgent, DocsBot,
+  AI BotKit), October–November 2026.
+</footer>
+
+</main>
+</body>
+</html>
