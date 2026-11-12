@@ -316,16 +316,22 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
         <tr><td><code>uuid</code></td><td class="col-type">CHAR(36)</td><td>Random ID made by the chat widget when a chat starts (new after ↺). Groups the questions of one chat.</td><td class="example">3f2c…-9a1e</td></tr>
         <tr><td><code>page_url</code></td><td class="col-type">VARCHAR(500), can be empty</td><td>The page the chat started on. Only links to this site are kept.</td><td class="example">https://example.com/contact/</td></tr>
         <tr><td><code>user_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The WordPress user, if the visitor was logged in. Empty = guest. No IP address is stored.</td><td class="example">empty</td></tr>
-        <tr><td><code>message_count</code></td><td class="col-type">INT</td><td>How many questions the chat has.</td><td class="example">4</td></tr>
+        <tr><td><code>message_count</code></td><td class="col-type">INT</td><td>How many visitor messages the chat has (questions to the AI + messages to a team member).</td><td class="example">4</td></tr>
         <tr><td><code>unanswered_count</code></td><td class="col-type">INT</td><td>How many of them got "I don't know". Drives the "not answered" badge.</td><td class="example">1</td></tr>
-        <tr><td><code>started_at</code> / <code>last_message_at</code></td><td class="col-type">DATETIME</td><td>First and latest question. Retention counts from the latest one.</td><td class="example">2026-11-04 08:44</td></tr>
+        <tr><td><code>mode</code></td><td class="col-type">VARCHAR(10)</td><td>Who answers the visitor now: <code>ai</code> (the chatbot) or <code>human</code> (a team member took over, the AI stays silent). Added in v4.</td><td class="example">ai</td></tr>
+        <tr><td><code>agent_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The WordPress user (admin or editor) in charge while <code>human</code>; kept after hand-back to show who handled the chat last.</td><td class="example">7</td></tr>
+        <tr><td><code>taken_over_at</code></td><td class="col-type">DATETIME, can be empty</td><td>When the current takeover started. Empty while the AI is in charge.</td><td class="example">2026-11-12 10:12</td></tr>
+        <tr><td><code>visitor_seen_at</code></td><td class="col-type">DATETIME, can be empty</td><td>Last time the visitor's chat checked in (every poll, at most one write per 20 seconds). Drives the "online" dot and the Live chat list.</td><td class="example">2026-11-12 10:14</td></tr>
+        <tr><td><code>agent_seen_at</code></td><td class="col-type">DATETIME, can be empty</td><td>Last time the agent in charge had the dashboard open. Silent for 10 minutes = chat goes back to the AI automatically.</td><td class="example">2026-11-12 10:14</td></tr>
+        <tr><td><code>started_at</code> / <code>last_message_at</code></td><td class="col-type">DATETIME</td><td>First and latest message (visitor or team member). Retention counts from the latest one.</td><td class="example">2026-11-04 08:44</td></tr>
       </tbody>
     </table>
   </div>
 
   <h2>Table 4: <code>wp_mnaisp_messages</code></h2>
-  <p>One row per question and its answer. The row is saved before the AI runs ("pending") and completed when the answer is
-    done, so a question is kept even when the visitor stops the answer or leaves.</p>
+  <p>One row per question and its AI answer. The row is saved before the AI runs ("pending") and completed when the answer is
+    done, so a question is kept even when the visitor stops the answer or leaves. Since v4 (live chat takeover) rows have a
+    <code>kind</code>: while a team member is in charge, visitor messages and team replies are separate rows.</p>
 
   <div class="table-wrap">
     <table>
@@ -334,9 +340,11 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
       </thead>
       <tbody>
         <tr><td><code>conversation_id</code></td><td class="col-type">BIGINT</td><td>Which conversation the question belongs to.</td><td class="example">12</td></tr>
+        <tr><td><code>kind</code></td><td class="col-type">VARCHAR(10)</td><td><code>qa</code> = question + AI answer (all rows before v4); <code>visitor</code> = visitor message while a team member is in charge (no AI); <code>agent</code> = team member reply (text in <code>answer</code>); <code>event</code> = joined, handed back, auto handed back, visitor left (name in <code>reason</code>). Only <code>qa</code> rows count as unanswered.</td><td class="example">qa</td></tr>
+        <tr><td><code>user_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The team member who wrote an <code>agent</code> row or caused an <code>event</code>.</td><td class="example">7</td></tr>
         <tr><td><code>question</code> / <code>answer</code></td><td class="col-type">TEXT / MEDIUMTEXT</td><td>What the visitor asked and what the chatbot answered (the server's own copy, never the history the browser sends).</td><td class="example">Do you ship abroad?</td></tr>
-        <tr><td><code>status</code></td><td class="col-type">VARCHAR(20)</td><td><code>answered</code>, <code>dont_know</code>, <code>error</code>, or <code>pending</code> (stopped before the answer finished).</td><td class="example">dont_know</td></tr>
-        <tr><td><code>reason</code></td><td class="col-type">VARCHAR(40), can be empty</td><td>Why "I don't know": nothing matched, best match too weak, no source close enough, or the AI found no answer.</td><td class="example">below_threshold</td></tr>
+        <tr><td><code>status</code></td><td class="col-type">VARCHAR(20)</td><td><code>qa</code> rows: <code>answered</code>, <code>dont_know</code>, <code>error</code>, or <code>pending</code> (stopped before the answer finished). <code>visitor</code> rows: <code>human</code>. <code>agent</code> and <code>event</code> rows: <code>sent</code>.</td><td class="example">dont_know</td></tr>
+        <tr><td><code>reason</code></td><td class="col-type">VARCHAR(40), can be empty</td><td><code>qa</code> rows: why "I don't know": nothing matched, best match too weak, or the AI found no answer. (Older rows may say "no source close enough": a second threshold removed 2026-11-12.) <code>event</code> rows: which event (<code>joined</code>, <code>handed_back</code>, …).</td><td class="example">below_threshold</td></tr>
         <tr><td><code>mode</code> / <code>top_score</code></td><td class="col-type">VARCHAR / FLOAT</td><td>Meaning + keyword search or keyword only, and the best meaning score.</td><td class="example">hybrid / 0.48</td></tr>
         <tr><td><code>sources</code></td><td class="col-type">LONGTEXT (JSON)</td><td>Cited sources, every chunk the search found with its scores, and what was sent to the AI. Shows why a question failed.</td><td class="example">{"cited":[…],"found":[…]}</td></tr>
         <tr><td><code>model</code>, <code>prompt_tokens</code>, <code>completion_tokens</code>, <code>ms</code></td><td class="col-type">VARCHAR / INT</td><td>Which AI answered, how many tokens it used, and how long it took.</td><td class="example">gpt-4o-mini, 1840, 96, 2300</td></tr>

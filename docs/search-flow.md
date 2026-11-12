@@ -111,7 +111,7 @@ URL at runtime (`get_permalink()` / `wp_get_attachment_url()`), all in a few que
 
 ### Step 7 — Decide: answer or "I don't know" (P3)
 
-If the best meaning score (`SearchResult::best_semantic`) is below `min_score`, nothing in the knowledge base is close
+If no chunk has a meaning score ≥ `min_score`, nothing in the knowledge base is close
 enough → fixed "I don't know" answer, **no LLM call**. Otherwise the top chunks go into the prompt as numbered sources
 and the LLM answers only from them, citing `[1]`, `[2]`.
 
@@ -123,10 +123,11 @@ Step-by-step walkthrough with a small example: `source-selection.md`.
 search (top_k = 6 sources)
   │
   ├─ no hits at all ─────────────────────────────▶ "I don't know"   (reason: no_matches, no AI call)
-  ├─ best meaning score < min_score (0.60) ──────▶ "I don't know"   (reason: below_threshold, no AI call)
   ▼
-source filter: keep a chunk only if meaning ≥ source_min_score (0.60) OR keyword rank ≤ 3
-  ├─ nothing left ───────────────────────────────▶ "I don't know"   (reason: no_relevant_sources, no AI call)
+meaning filter: keep chunks with meaning ≥ min_score (0.60)
+  ├─ none left ──────────────────────────────────▶ "I don't know"   (reason: below_threshold, no AI call)
+  ▼
+keyword add-back: also send chunks with keyword rank ≤ 3   (keyword-only mode: all hits, both steps skipped)
   ▼
 small-to-big (PageExpander): a chunk whose page is short (≤ 4,000 characters) is replaced by the WHOLE page;
   other found chunks of that page join the same source. Long pages keep sending single chunks.
@@ -143,12 +144,10 @@ answer with [n] markers → cited sources (title, URL, #page=N for PDFs), only t
 
 Why the source filter: meaning search always returns its closest chunks, however weak, and Rank Fusion only looks at
 positions, so "top 6" can contain filler (e.g. meaning 0.52, no keyword match, fused 1/(60+6) = 0.0152). Each source
-must therefore earn its place on its own score. Two thresholds, two jobs:
-
-| Setting | Default | Checks | Job |
-|---|---|---|---|
-| `min_score` ("I don't know" threshold) | 0.60 | the **best** chunk only | Is the question answerable at all? |
-| `source_min_score` (source threshold) | 0.60 | **every** chunk | Is this chunk good enough to show the AI? |
+must therefore earn its place on its own score. One threshold, `min_score` (Settings → "Minimum match score", default
+0.60), does both jobs: is this chunk good enough to show the AI, and (none is) is the question answerable at all?
+Until 2026-11-12 a second setting `source_min_score` did the per-chunk job; merged because equal values did the same
+check twice.
 
 Why small-to-big: search works best on small, focused chunks, but the answer often needs the surrounding text. A page
 with one section per industry has no chunk that lists all industries; sending the whole (short) page fixes that.
@@ -390,7 +389,7 @@ Playground, where the admin can see why a chunk ranked where it did.
 | **Stopwords** / **stemming** | Ignored common words / reducing words to their root (MySQL doesn't stem) | FULLTEXT quirks |
 | **Hybrid search** | Meaning search + keyword search combined | `SearchService` |
 | **Reciprocal Rank Fusion (RRF)** | Merge rankings with Σ 1/(k + rank) | `RankFusion` |
-| **Threshold / gate** | Minimum score below which the bot says "I don't know" | `AnswerService::gate()`, setting `min_score` |
+| **Threshold / gate** | Minimum score below which the bot says "I don't know" | `AnswerService::pick()`, setting `min_score` |
 | **System prompt** | Instructions given to the LLM before the conversation | `PromptBuilder` |
 | **Prompt injection** | Text in the content that tries to give the LLM new instructions | rule in `PromptBuilder` |
 | **Temperature** | Randomness of the LLM's wording (0 = most focused) | chat setting |

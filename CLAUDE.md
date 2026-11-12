@@ -36,6 +36,48 @@ Claude's role: research assistant.
 - 2026-11-09: NEW confirmed feature: SMART SALES ALERTS (D6): owner sets situations, AI detects them in chat (+ Woo cart/
   order signals), sends email/Telegram/Slack alert with summary + Take over link. Highlighted box in proposals.html
   after takeover; feature 05 now "Made for WooCommerce".
+- 2026-11-12: Implementing LIVE CHAT TAKEOVER (D5). Plan drafted `docs/live-takeover-plan.md` (short polling, schema v4
+  conversations.mode/agent_id + messages.kind, LiveChatService, /chat/live, admin Live chat tab, milestones L0–L5).
+  Awaiting user's review + answers to its open questions before coding.
+  User's calls: admins+editors take over (edit_others_posts, editors see Live chat tab only), visitor sees setting
+  "Team member name" (default "Team member"), auto hand-back 10 min, agent msgs in AI history, per-tab conversation,
+  no email to left visitors, all FREE, idle back-off after 10 min no interaction.
+  FUTURE (not now): messages table one row per message (role visitor/ai/agent/event, content, reply_to), schema v5,
+  before first public release; described in docs/live-takeover-flow.html section 9. Live chat only when recording ON (option a); ONE team name for whole site. All questions answered, next = L0.
+
+- 2026-11-12: ONE threshold (user's call) committed 543f818: source_min_score + reason no_relevant_sources removed;
+  AnswerService::pick(): meaning filter (each chunk ≥ min_score, none → below_threshold) then keyword top-3 add-back;
+  keyword-only mode keeps all hits. Setting label "Minimum match score". Old log rows keep the no_relevant_sources label.
+
+- 2026-11-12: L0 committed cd98894 (schema v4): conversations + mode/agent_id/taken_over_at/visitor_seen_at/agent_seen_at,
+  messages + kind/user_id; ConversationRepository live methods (find_by_uuid, add_visitor_message, add_agent_message,
+  add_event, take_over atomic, hand_back, taken_over_ids, touch_visitor/agent, messages_since, active). Unanswered/totals
+  = qa only. Dev DB migrated (backup of v3 tables in session scratchpad). docs.html updated. Next = L1.
+
+- 2026-11-12: L1 committed 2fd5b90 (server side): LiveChatService (rules, auto hand-back 10 min, capability edit_others_posts
+  via filter mnaisp_live_chat_capability), LiveChatController (/live/chats, /messages?after&since, /takeover, /reply,
+  /handback), /chat/ask human branch (handled:human, no AI, per-minute limit only), POST /chat/live (poll 15 s ai / 3 s
+  human, own rate limit 60/min), team_name setting (default "Team member"), recording off → hand_back_all. MessagePresenter
+  shared with Conversations viewer. 34 REST checks passed on dev. Deviations in plan section 10b. Next = L2 (widget).
+
+- 2026-11-12: L2 b10eff6 (widget: live.ts state per tab, polls /chat/live 15 s ai / 3 s human / slower closed,
+  hidden, idle; agent bubbles + system notes; human-mode send without embedding/AI; unread count on launcher; loader
+  mounts chat closed when stored mode human; history pairs include team replies). L3 21941fb (admin Live chat tab
+  pages/LiveChat.tsx: list 5 s, thread 2 s, take over / reply / hand back / take over anyway dialog, team name card
+  admins only; editors see only this tab; route #/live/<id>; shared components/MessageRow.tsx). L4 ee46cd3 (viewer "Open in
+  Live chat", "messages" labels, privacy text, Style preview sample, preview 600 px). Browser-checked with Playwright +
+  system Chromium (throwaway scripts, not committed specs). Deviations: plan sections 10b/10c. Next = L5 (polish).
+
+- 2026-11-12: Online fix 7a813b6 (user's call): closed widget checks in every 60 s also in AI mode; loader mounts chat
+  closed on every page once the tab chatted (unless live off); Online < 90 s, Left > 3 min (was 60 s / 2 min). Plan 10d.
+
+- 2026-11-12: Ended-chat fix 684616f: open thread whose chat left the list (AI mode, visitor > 10 min) shows banner "no longer
+  live", read-only, polling stops, link to #/conversations/<id> (new deep link opens viewer); comes back if visitor returns.
+  "Live" is never stored: live = mode human OR visitor_seen_at within 10 min (LiveChatService::ACTIVE_SECONDS).
+
+- 2026-11-12: Visitor name fix b038232: list/thread name = visitor (WP display name or "Guest"; deleted user → Guest);
+  badge = who answers (AI / You / other agent). Guest chat gets user_id when visitor logs in mid-chat (on question,
+  message to team, or widget check-in; only fills empty user_id, never moves a chat to another account).
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -204,4 +246,6 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/chunking.md` — how content becomes chunks + vectors (extract, chunker rules, hash reuse, embed, store, example); update when chunker.ts / ContentExtractor change
 - `docs/commercial-requirements.md` — what to add to sell commercially: gaps vs competitors, forum/review pain points, prioritized requirements, release plan
 - `docs/proposals/` — client proposals: proposal-1-self-hosted-license.md, proposal-2-managed-ai-subscription.md, proposals.html (client page)
+- `docs/live-takeover-plan.md` — live chat takeover (D5) plan: polling, schema v4, REST, widget, admin tab, milestones L0–L5
+- `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
