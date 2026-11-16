@@ -312,8 +312,7 @@ specification?</code></pre>
   <p>Second rule added to the default prompt:</p>
   <pre><code>- If the visitor wants something the website team must handle (a price, quote, order, stock check,
   sample or delivery), do not use the text above. Confirm what the sources say about the product
-  they named, say the team can help with the rest, and give the contact details or quote page if a
-  source has them.</code></pre>
+  they named, say the team can help with the rest, and tell them how to reach the team: {contact}</code></pre>
   <div class="card">
     <h3>After (tested 2026-11-16, keyword search)</h3>
     <div class="chat">
@@ -321,7 +320,33 @@ specification?</code></pre>
       <div class="msg ai ok">Yes, NMUF 4/30-4046 SJ is listed on the site. It's a 4-conductor, 30 AWG cable … 0.082" nominal O.D. [2] The team can help with a quotation for 10 ft. Please contact them directly for pricing and ordering. <small>logged as answered</small></div>
     </div>
   </div>
-  <div class="callout warn"><b>Still missing: the contact details.</b> A quote question does not match the Contact page, so the AI says "contact them" without an email or link. Fix now with content: a knowledge-base FAQ "How do I request a quote or pricing?" with email, phone and form link. Later option: a "Sales contact" setting put into the prompt as a <code>{contact}</code> placeholder, so it is always there.</div>
+  <p>Without contact details the AI could only say "contact them": a quote question does not match the Contact page, so it was never among the sources.</p>
+
+  <h3 style="margin-top:28px">The <code>{contact}</code> setting</h3>
+  <div class="grid2">
+    <div class="card">
+      <h3>Admin</h3>
+      <ul>
+        <li><b>Settings → Answers:</b> "Contact details for prices, quotes and orders" (<code>contact_text</code>, optional, max 1000 chars, plain text).</li>
+        <li><b>Settings → Prompt:</b> <code>{contact}</code> in the placeholder list with its current value. Warning when contact is set but a custom prompt has no <code>{contact}</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Prompt</h3>
+      <ul>
+        <li>Set: <code>{contact}</code> = the text, e.g. "Email sales@…, call …, or request a quote at https://…".</li>
+        <li>Empty: <code>{contact}</code> = <code>PromptBuilder::CONTACT_FALLBACK</code> ("use the contact details or quote page from the sources if they have them; otherwise just say to contact the team"), so the rule still reads well.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h3>With contact set (tested 2026-11-16, test values)</h3>
+    <div class="chat">
+      <div class="msg user">…could we have a quotation?</div>
+      <div class="msg ai ok">Yes, we have that product listed! The NMUF 4/30-4046 SJ is a 4-conductor, 30 AWG… [2] Our sales team can help you with a quotation for 10 ft. You can reach them by: Email: sales@example.com · Phone: +1 555 0100 · Quote request: https://example.com/quote</div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Custom prompts:</b> the live site likely has one. Add <code>{contact}</code> at the end of the price / quote rule by hand, then fill the setting.</div>
 
   <h3 style="margin-top:28px">Duplicate sources</h3>
   <p>The same live prompt had 5 sources but only 2 different texts: the site has the "PVC Multiconductor Cable" page twice (posts 16100 and 16104). <code>AnswerService::unique_content()</code> now drops hits whose text matches a better-ranked hit (ignoring case and spacing) before the prompt is built. Slots are not refilled, so a duplicate means one source fewer, not a different one. Best fix is still on the site: remove or exclude the copy.</p>
@@ -337,7 +362,9 @@ specification?</code></pre>
       <tr><td><code>includes/Chat/AnswerService.php</code></td><td><code>run()</code> runs both searches; <code>find()</code> = search + gate + source filter; <code>merge()</code> = take turns; <code>merged_result()</code> = one result for logs; <code>unique_content()</code> = drop sources with repeated text.</td></tr>
       <tr><td><code>includes/Chat/AnswerResult.php</code></td><td><code>context_query</code> (set only when the context search changed the sources); shown as <code>contextQuery</code> in debug output.</td></tr>
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td>Stores <code>contextQuery</code> inside the <code>sources</code> JSON of each message. No schema change.</td></tr>
-      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>History still goes in as real user/assistant messages. <code>DEFAULT_TEMPLATE</code> has the clarifying-question rule and the price / quote / order rule (see section 6).</td></tr>
+      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>History still goes in as real user/assistant messages. <code>DEFAULT_TEMPLATE</code> has the clarifying-question rule and the price / quote / order rule (see section 6); <code>{contact}</code> placeholder + <code>CONTACT_FALLBACK</code>.</td></tr>
+      <tr><td><code>includes/Chat/ChatSettingsService.php</code>, <code>includes/Rest/ChatSettingsController.php</code></td><td><code>contact_text</code> setting (JSON <code>contactText</code>), <code>{contact}</code> placeholder info, <code>contactSet</code> for the Prompt warning.</td></tr>
+      <tr><td><code>assets/src/components/ChatSettingsCard.tsx</code>, <code>PromptCard.tsx</code></td><td>Contact field in Answers; missing-<code>{contact}</code> warning in Prompt.</td></tr>
     </table>
   </div>
   <h3 style="margin-top:22px">Debugging a follow-up</h3>
