@@ -115,7 +115,7 @@
 <main>
   <h1>Asking for a live agent</h1>
   <p class="lead">A visitor can ask for a person ("live agent", "can I talk to a human?") instead of the AI. The request goes to the team in the Live chat tab, the visitor gets an honest reply, and the AI keeps helping until someone takes over.</p>
-  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commit <code>7c30e0f</code>) · Builds on live chat takeover (D5)</p>
+  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>) · Builds on live chat takeover (D5)</p>
 
   <nav class="toc">
     <a href="#problem">1. The problem</a>
@@ -123,6 +123,7 @@
     <a href="#marker">3. The AI marker</a>
     <a href="#reply">4. What the visitor sees</a>
     <a href="#team">5. What the team sees</a>
+    <a href="#presence">5b. Is a team member there?</a>
     <a href="#data">6. Data &amp; log</a>
     <a href="#code">7. Where in the code</a>
     <a href="#limits">8. Limits &amp; next ideas</a>
@@ -211,7 +212,7 @@
   </div>
 
   <h2 id="reply"><span class="n">4</span>What the visitor sees</h2>
-  <p>The reply is honest about whether anyone is there. "Team online" = a Live chat tab polled the list in the last 60 s (<code>mnaisp_live_team_seen</code> option, written at most every 15 s).</p>
+  <p>The reply is honest about whether anyone is there. "Team online" = a Live chat tab polled the list in the last <b>5 minutes</b> (<code>mnaisp_live_team_seen</code> option, written at most every 15 s). See <a href="#presence">5b</a>.</p>
   <div class="tablewrap">
     <table>
       <tr><th>Situation</th><th>Reply (editable on the Live chat tab)</th><th>Recorded</th></tr>
@@ -258,6 +259,30 @@
   </div>
   <div class="callout warn"><b>No alerts yet.</b> Only works while someone has the Live chat tab open. Email / sound / Slack alerts belong to Smart Sales Alerts (D6).</div>
 
+  <h2 id="presence"><span class="n">5b</span>Is a team member there?</h2>
+  <p>One rule, <b>5 minutes</b>, everywhere. Presence = the team member's Live chat tab keeps polling.</p>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Check</th><th>Based on</th><th>Time</th><th>Effect</th></tr>
+      <tr><td>Team online (new request)</td><td>Any Live chat tab polled the list (<code>mnaisp_live_team_seen</code>)</td><td>5 min</td><td>"I've asked a team member…" vs "No one is available…" + contact</td></tr>
+      <tr><td>Agent away</td><td>The agent in charge's dashboard polled (<code>agent_seen_at</code>)</td><td>5 min</td><td>Widget header: "Support is away right now. Your messages will wait for them."</td></tr>
+      <tr><td>Hand-back, visitor waiting</td><td>Visitor wrote after <code>agent_seen_at</code></td><td>5 min</td><td>Back to the AI + "The AI assistant is back. If your last message wasn't answered, please send it again."</td></tr>
+      <tr><td>Hand-back, quiet chat</td><td><code>agent_seen_at</code></td><td>10 min</td><td>Back to the AI (agent may just be reading)</td></tr>
+    </table>
+  </div>
+  <div class="callout good"><b>Background tabs count.</b> The Live chat list keeps polling every 30 s while the browser tab is hidden (<code>usePolling</code> <code>hiddenDelay</code>). Browsers may slow it to once a minute after 5 minutes; the 5-minute window allows for that. Before this fix, polling stopped in a hidden tab, so an agent who only switched tabs counted as gone.</div>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Agent quiet for (tested)</th><th>Visitor wrote?</th><th>Result</th></tr>
+      <tr><td>150 s</td><td>–</td><td>online, human</td></tr>
+      <tr><td>290 s</td><td>yes</td><td>online, human</td></tr>
+      <tr><td>310 s</td><td>yes</td><td>handed back to the AI + note</td></tr>
+      <tr><td>310 s</td><td>no</td><td>header "away", still human</td></tr>
+      <tr><td>610 s</td><td>no</td><td>handed back to the AI</td></tr>
+    </table>
+  </div>
+  <p style="margin-top:12px">Trade-off: up to 5 minutes after the last team member really left, a new request still hears "I've asked a team member…"; the 5-minute request expiry then gives the contact details. Filters: <code>mnaisp_live_team_online_seconds</code>, <code>mnaisp_live_agent_idle_waiting_seconds</code>, <code>mnaisp_live_agent_idle_seconds</code>, <code>mnaisp_live_request_timeout_seconds</code>.</p>
+
   <h2 id="data"><span class="n">6</span>Data &amp; log</h2>
   <p>No schema change: requests are <code>event</code> rows, like joined / handed back.</p>
   <div class="tablewrap">
@@ -281,7 +306,9 @@
       <tr><td><code>includes/Chat/AnswerService.php</code>, <code>AnswerResult.php</code></td><td>Marker check after the AI reply; <code>REASON_HANDOFF</code>; <code>with_answer()</code>.</td></tr>
       <tr><td><code>includes/Rest/ChatController.php</code></td><td>Phrase check before search (<code>ask_person()</code>, <code>fixed_reply()</code>); transform for the marker path.</td></tr>
       <tr><td><code>includes/Rest/AnswerResponder.php</code></td><td>New <code>$transform</code> hook: change the result before it is logged and sent.</td></tr>
-      <tr><td><code>includes/Conversations/LiveChatService.php</code></td><td><code>request_person()</code>, <code>team_online()</code>, expiry in <code>visitor_poll()</code>, <code>requestedAt</code> in the chat state.</td></tr>
+      <tr><td><code>includes/Conversations/LiveChatService.php</code></td><td><code>request_person()</code>, <code>team_online()</code>, expiry in <code>visitor_poll()</code>, <code>requestedAt</code> in the chat state; <code>agent.away</code> in the visitor poll, <code>hand_back_if_idle()</code> with the 5-minute "visitor waiting" rule.</td></tr>
+      <tr><td><code>assets/src/hooks/usePolling.ts</code></td><td><code>hiddenDelay</code>: keep polling in a background tab (Live chat list, 30 s).</td></tr>
+      <tr><td><code>assets/src/widget/ChatPanel.tsx</code></td><td>Header "… is away right now" from <code>live.away</code>.</td></tr>
       <tr><td><code>includes/Conversations/ConversationRepository.php</code></td><td>Events, <code>STATUS_HANDOFF</code>, <code>open_request()</code>, list sort + <code>requested_at</code>.</td></tr>
       <tr><td><code>includes/Conversations/ConversationSettingsService.php</code>, <code>Rest/ConversationsController.php</code></td><td><code>handoff_text</code>, <code>handoff_offline_text</code>, <code>handoff_timeout_text</code> (REST camelCase).</td></tr>
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td><code>finish_reply()</code>; handoff status.</td></tr>

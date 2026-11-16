@@ -87,6 +87,9 @@ Claude's role: research assistant.
   offline/off → contact), 5-min expiry note, events requested / requested_offline / request_expired (no schema
   change), Live chat badge "Wants a person" + sort + banner, 3 reply texts on Live chat tab, log status handoff.
   Doc docs/live-agent-request.html. Not merged into WWC yet.
+- 2026-11-16: Presence fixes (user's call: ONE 5-min rule): 6c6f93e team online = Live chat tab polled ≤ 5 min;
+  be04912 list keeps polling in hidden tabs (30 s), visitor sees "<team> is away" after 5 min agent quiet, hand-back
+  after 5 min when visitor wrote (quiet chat 10 min). Not merged into WWC yet.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -259,4 +262,4 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
-- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, code map; update when HandoffDetector / request_person change
+- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), code map; update when HandoffDetector / request_person / presence times change
