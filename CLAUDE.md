@@ -249,4 +249,4 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-plan.md` — live chat takeover (D5) plan: polling, schema v4, REST, widget, admin tab, milestones L0–L5
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
-- `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, why, code map, debug query; update when contextQuery / AnswerService merge change
+- `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question prompt rule, why, code map, debug query; update when contextQuery / AnswerService merge change

@@ -283,6 +283,30 @@ specification?</code></pre>
     </div>
   </div>
 
+  <h3 style="margin-top:28px">When the search is right but the request is unclear</h3>
+  <p>Good sources are not always enough. On the live site, "give me top 5" (after "Which AS105 size would you like?") reached the AI with a 0.76 match, yet the AI replied with the "I don't know" text. The visitor asked something vague; the AI had no other way out, and <code>said_dont_know()</code> logged it as "not answered".</p>
+  <p>The default prompt now has a rule right after the "I don't know" rule:</p>
+  <pre><code>- Read short follow-ups (such as "yes" or "give me the top 5") in light of the conversation so far.
+  If the request is still unclear, ask one short clarifying question instead of the text above,
+  and suggest what you can answer from the sources. Do not ask when the sources simply lack the answer.</code></pre>
+  <div class="grid2">
+    <div class="card">
+      <h3>Before</h3>
+      <div class="chat">
+        <div class="msg user">which one is better?</div>
+        <div class="msg ai fail">I apologize, but I'm unable to determine the answer… <small>logged as "not answered"</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>After (tested 2026-11-16)</h3>
+      <div class="chat">
+        <div class="msg user">which one is better?</div>
+        <div class="msg ai ok">The AS105 listings don't rate one size as "better"… If you share the part numbers or sizes you're comparing, I can list their specs side by side. <small>logged as answered</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Custom prompts don't get it.</b> The rule is only in <code>PromptBuilder::DEFAULT_TEMPLATE</code>. A site with a saved custom template (Settings → Prompt) must have the line pasted in by hand. Also keep the "I don't know" text a plain "no answer" sentence: if it asks for clarification itself, the log can't tell "unclear" from "not in the sources".</div>
+
   <!-- 7 -->
   <h2 id="code"><span class="n">7</span>Where in the code</h2>
   <div class="tablewrap">
@@ -294,7 +318,7 @@ specification?</code></pre>
       <tr><td><code>includes/Chat/AnswerService.php</code></td><td><code>run()</code> runs both searches; <code>find()</code> = search + gate + source filter; <code>merge()</code> = take turns; <code>merged_result()</code> = one result for logs.</td></tr>
       <tr><td><code>includes/Chat/AnswerResult.php</code></td><td><code>context_query</code> (set only when the context search changed the sources); shown as <code>contextQuery</code> in debug output.</td></tr>
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td>Stores <code>contextQuery</code> inside the <code>sources</code> JSON of each message. No schema change.</td></tr>
-      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>Unchanged: history still goes in as real user/assistant messages.</td></tr>
+      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>History still goes in as real user/assistant messages. <code>DEFAULT_TEMPLATE</code> has the clarifying-question rule (see section 6).</td></tr>
     </table>
   </div>
   <h3 style="margin-top:22px">Debugging a follow-up</h3>
@@ -317,6 +341,7 @@ FROM wp_mnaisp_messages ORDER BY id DESC LIMIT 5"</code></pre>
     <li><b>Old cached widgets</b> don't send <code>contextQuery</code> until the page cache refreshes. They behave like before.</li>
     <li><b>Playground</b> doesn't send a context query, so it tests single questions only.</li>
     <li><b>Admin Conversations screen</b> doesn't display <code>contextQuery</code> yet (stored, not shown).</li>
+    <li><b>Wrong citation number:</b> in one test the AI answered about AS105 but cited [1] = AS155. Model mistake, not search; watch for it.</li>
     <li><b>Next step if needed:</b> AI query rewrite. A small AI call turns history + question into a standalone query ("AS105 specifications"). Best quality, but adds an extra call and delay. Could run only for short questions or ones with pronouns.</li>
   </ul>
 </main>
