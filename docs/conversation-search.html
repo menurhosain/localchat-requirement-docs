@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversation Search</title>
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5b616b;
+    --border: #e3e1da;
+    --line: #cfccc2;
+    --code-bg: #f0eee8;
+    --q: #2b6cb0;
+    --q-soft: #e6eff9;
+    --ctx: #6b4fa3;
+    --ctx-soft: #efeaf8;
+    --good: #2f6f5e;
+    --good-soft: #e4f0ec;
+    --warn: #9a5a12;
+    --warn-soft: #fbf0e1;
+    --bad: #a33b3b;
+    --bad-soft: #f8e7e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+      --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+      --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+    --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+    --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 10px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.4rem; margin: 64px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 0.9rem; flex: none; }
+  h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  .lead { color: var(--muted); max-width: 760px; font-size: 1.05rem; }
+  .meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
+  code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 0.86rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0 0 12px; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  nav.toc a { color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface); padding: 5px 12px; border-radius: 999px; font-size: 0.9rem; }
+  nav.toc a:hover { border-color: var(--muted); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-top: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .grid2 .card { margin-top: 0; }
+  .callout { border-left: 4px solid var(--c); background: var(--s); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .callout b { color: var(--c); }
+  .good { --c: var(--good); --s: var(--good-soft); }
+  .warn { --c: var(--warn); --s: var(--warn-soft); }
+  .bad { --c: var(--bad); --s: var(--bad-soft); }
+  .q { --c: var(--q); --s: var(--q-soft); }
+  .ctx { --c: var(--ctx); --s: var(--ctx-soft); }
+
+  /* chat transcript */
+  .chat { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
+  .msg { padding: 9px 13px; border-radius: 12px; font-size: 0.93rem; max-width: 85%; }
+  .msg.user { align-self: flex-end; background: var(--q-soft); color: var(--text); border-bottom-right-radius: 4px; }
+  .msg.ai { align-self: flex-start; background: var(--code-bg); border-bottom-left-radius: 4px; }
+  .msg.ai.fail { background: var(--bad-soft); color: var(--bad); }
+  .msg.ai.ok { background: var(--good-soft); }
+  .msg small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 3px; }
+
+  /* pipeline */
+  .pipe { display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr; align-items: stretch; margin-top: 16px; }
+  .stage { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--c, var(--line)); border-radius: 10px; padding: 14px 16px; font-size: 0.92rem; }
+  .stage h3 { color: var(--c, var(--text)); }
+  .stage ul { padding-left: 18px; margin: 0; }
+  .arrowh { display: grid; place-items: center; color: var(--muted); font-size: 1.4rem; }
+
+  /* two searches */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .lane { border: 1px solid var(--border); border-top: 4px solid var(--c); background: var(--surface); border-radius: 10px; padding: 14px 16px; }
+  .lane h3 { color: var(--c); }
+  .hit { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 7px; background: var(--s); margin-top: 6px; font-size: 0.9rem; }
+  .hit .score { font: 0.8rem ui-monospace, Menlo, monospace; color: var(--muted); white-space: nowrap; }
+  .hit.wrong { background: var(--bad-soft); }
+  .merge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+  .chip { padding: 6px 12px; border-radius: 999px; font-size: 0.88rem; border: 1px solid var(--c); background: var(--s); color: var(--text); }
+  .chip b { color: var(--c); margin-right: 4px; }
+  .chip.dup { opacity: 0.45; text-decoration: line-through; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 650; }
+  tr:last-child td { border-bottom: 0; }
+  .tablewrap { overflow-x: auto; margin-top: 14px; }
+
+  .tag { display: inline-block; font-size: 0.75rem; font-weight: 650; padding: 1px 8px; border-radius: 999px; background: var(--s); color: var(--c); }
+
+  @media (max-width: 760px) {
+    .grid2, .split { grid-template-columns: 1fr; }
+    .pipe { grid-template-columns: 1fr; }
+    .arrowh { transform: rotate(90deg); height: 32px; }
+    h1 { font-size: 1.7rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>How search works in a conversation</h1>
+  <p class="lead">When a visitor sends a follow-up such as "yes" or "specification?", the question alone means almost nothing to the search. This page explains how the widget and server use the recent conversation to find the right sources, and why it was built this way.</p>
+  <p class="meta">Plugin: compact-local-chatbot · Written 2026-11-16 · Branch <code>wwc-group-branding</code></p>
+
+  <nav class="toc">
+    <a href="#problem">1. The problem</a>
+    <a href="#split">2. Search vs. AI</a>
+    <a href="#context">3. Context text</a>
+    <a href="#merge">4. Two searches, one list</a>
+    <a href="#example">5. Worked example</a>
+    <a href="#why">6. Why this design</a>
+    <a href="#code">7. Where in the code</a>
+    <a href="#limits">8. Limits &amp; next ideas</a>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="problem"><span class="n">1</span>The problem</h2>
+  <p>The question is embedded and searched on its own. A follow-up carries no topic, so the search finds the wrong page (or nothing), and the AI never sees the right source.</p>
+  <div class="card">
+    <div class="chat">
+      <div class="msg user">AS105</div>
+      <div class="msg ai ok">AS105 is a flexible power cable series… silver-plated copper, silicone rubber, 200°C / 600V… <small>Source [1] Flexible Power Cable</small></div>
+      <div class="msg user">specification?</div>
+      <div class="msg ai fail">Sorry, I don't know the answer to that. <small>Search matched "Tubular Braided Wire" (0.657), not AS105</small></div>
+      <div class="msg user">AS105 specification please.</div>
+      <div class="msg ai ok">Conductor: Silver Plated Copper… Insulation: Silicone Rubber… <small>Works only because the visitor repeated "AS105"</small></div>
+    </div>
+  </div>
+  <div class="callout bad"><b>Two ways it failed.</b> "Yes" matched nothing, so the gate stopped it before the AI. "specification?" matched the <em>wrong</em> page well enough (0.657 &gt; min_score 0.5) to pass the gate, so the AI got Tubular Braided Wire sources plus AS105 history and answered "I don't know".</div>
+
+  <!-- 2 -->
+  <h2 id="split"><span class="n">2</span>What goes to search, what goes to the AI</h2>
+  <p>History has two separate jobs. Mixing them up is the root of the problem.</p>
+  <div class="pipe">
+    <div class="stage" style="--c: var(--q)">
+      <h3>Widget (browser)</h3>
+      <ul>
+        <li>Embeds the <b>question</b></li>
+        <li>Builds + embeds the <b>context text</b></li>
+        <li>Sends both, plus <b>history</b> (last N messages)</li>
+      </ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--ctx)">
+      <h3>Search (server)</h3>
+      <ul>
+        <li>Question search</li>
+        <li>Context search</li>
+        <li>Merge → top_k sources</li>
+        <li>History is <b>not</b> used</li>
+      </ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--good)">
+      <h3>AI prompt</h3>
+      <ul>
+        <li>System: rules + sources</li>
+        <li>History: last N messages, real roles</li>
+        <li>User: the question</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Search needs: a short, focused topic</h3><p>The recent turn only. Old topics and long text blur the match.</p></div>
+    <div class="card"><h3>The AI needs: the whole thread</h3><p>To know that "yes" answers "What would you like to know?". Controlled by the <b>Conversation memory</b> setting (<code>history_messages</code>, default 10, max 20).</p></div>
+  </div>
+
+  <!-- 3 -->
+  <h2 id="context"><span class="n">3</span>The context text (built in the widget)</h2>
+  <p><code>contextQuery()</code> in <code>assets/src/widget/useChat.ts</code> joins these lines, oldest first:</p>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Part</th><th>Rule</th><th>Why</th></tr>
+      <tr><td>Last 2 visitor messages</td><td><code>CONTEXT_USER_MESSAGES = 2</code>, each cut to 300 chars</td><td>One is not enough: after "AS105" → "Yes", the last visitor message is "Yes" again.</td></tr>
+      <tr><td>Last real AI answer</td><td>First 300 chars (<code>CONTEXT_MESSAGE_CHARS</code>), <code>[1]</code> markers removed, "I don't know" answers skipped</td><td>The product name is often only in the AI's reply. "I don't know" names no topic.</td></tr>
+      <tr><td>The new question</td><td>Always last</td><td>Keeps the current intent.</td></tr>
+      <tr><td>Total</td><td>Cut to 1500 chars (<code>CONTEXT_QUERY_MAX_CHARS</code>, same cap on the server)</td><td>About 375 tokens, under the embedding model's 512-token limit.</td></tr>
+    </table>
+  </div>
+  <pre><code>AS105
+AS105 is a flexible power cable series. Its construction includes silver-plated copper (single end to QQ-W-343), silicone rubber insulation rated 200°C / 600V, and it is non-UL. It is available in many AWG sizes from 24 to 4/0, with varying…
+specification?</code></pre>
+  <ul>
+    <li>Only finished turns count (answered or "I don't know"). Stopped, failed or interrupted answers are ignored.</li>
+    <li>No earlier turn, or Conversation memory = 0 → no context text is sent; the question is searched alone.</li>
+    <li>The widget embeds the context text only when the question itself got a vector (model loaded). Otherwise the context search runs on keywords. For API-provider indexes the server embeds it.</li>
+    <li>Sent as <code>contextQuery</code> + <code>contextVector</code> on <code>POST /chat/ask</code>. Both optional, so older cached widgets keep working.</li>
+  </ul>
+
+  <!-- 4 -->
+  <h2 id="merge"><span class="n">4</span>Two searches, one list (server)</h2>
+  <p><code>AnswerService::run()</code> runs both searches whenever a context text arrives. Each one goes through the normal gate (<code>min_score</code>) and source filter (<code>source_min_score</code> or top-3 keyword match).</p>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Question search</th><th>Context search</th><th>Result</th></tr>
+      <tr><td>passes</td><td>passes</td><td><b>Merge</b> both lists (below)</td></tr>
+      <tr><td>fails</td><td>passes</td><td>Context hits only</td></tr>
+      <tr><td>passes</td><td>fails</td><td>Question hits only (as before)</td></tr>
+      <tr><td>fails</td><td>fails</td><td>"I don't know", no AI call</td></tr>
+    </table>
+  </div>
+  <h3 style="margin-top:22px">The merge: take turns, not scores</h3>
+  <p><code>merge()</code> picks one hit from each list in turn, skips chunks already taken, and stops at <code>top_k</code>. The list whose best meaning score is higher goes first, so its top hit becomes source [1].</p>
+  <div class="split">
+    <div class="lane ctx" style="--c: var(--ctx); --s: var(--ctx-soft)">
+      <h3>Context search (goes first, higher score)</h3>
+      <div class="hit"><span>C1 · Flexible Power Cable</span><span class="score">chunk 3578</span></div>
+      <div class="hit"><span>C2 · Flexible Power Cable</span><span class="score">chunk 3577</span></div>
+    </div>
+    <div class="lane q" style="--c: var(--q); --s: var(--q-soft)">
+      <h3>Question search</h3>
+      <div class="hit wrong"><span>Q1 · Tubular Braided Wire</span><span class="score">0.657</span></div>
+      <div class="hit wrong"><span>Q2 · Tubular Braided Wire</span><span class="score">0.645</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Merged, top_k = 4</h3>
+    <div class="merge-row">
+      <span class="chip ctx"><b>[1]</b>C1 Flexible Power Cable</span>
+      <span class="chip q"><b>[2]</b>Q1 Tubular Braided Wire</span>
+      <span class="chip ctx"><b>[3]</b>C2 Flexible Power Cable</span>
+      <span class="chip q"><b>[4]</b>Q2 Tubular Braided Wire</span>
+    </div>
+    <p style="margin-top:12px; color: var(--muted); font-size: 0.92rem">A chunk found by both searches is taken once (the second copy is skipped). Then <code>PageExpander</code> may send short pages whole, and the AI cites only the sources it uses.</p>
+  </div>
+  <div class="callout good"><b>Why turns, not scores?</b> On this site, meaning scores sit close together (0.61–0.66) for right and wrong pages alike, so sorting by score cannot tell them apart. Taking turns guarantees each search gets its best hit in: a follow-up keeps the topic it follows, and a topic switch ("what about tubular braided wire?") keeps the page the new question names.</div>
+
+  <!-- 5 -->
+  <h2 id="example"><span class="n">5</span>Worked example (tested 2026-11-16)</h2>
+  <p>Real request to <code>/chat/ask</code> on the dev site with vectors from <code>Xenova/bge-small-en-v1.5</code> (q8, cls), top_k = 2 at that time:</p>
+  <div class="card">
+    <div class="chat">
+      <div class="msg user">AS105</div>
+      <div class="msg ai">AS105 is a flexible power cable series…</div>
+      <div class="msg user">specification?</div>
+      <div class="msg ai ok">AS105 is a flexible power cable with the following specifications: Conductor: Silver Plated Copper, single end to QQ-W-343 [1] · Insulation: Silicone Rubber, 200°C, 600V [1] · Wall thickness 0.033"–0.111" [1] · Non-UL [1] · AWG 24 – 4/0 [1]<small>Sent: [1] Flexible Power Cable (context) · [2] Tubular Braided Wire (question). Cited: [1] only.</small></div>
+    </div>
+  </div>
+  <p style="margin-top:12px">The AI gets the wrong page too, but with the right page and the history next to it, it picks the right one and cites only [1].</p>
+
+  <!-- 6 -->
+  <h2 id="why"><span class="n">6</span>Why this design</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="tag bad">rejected</span> Search with the whole conversation</h3>
+      <ul>
+        <li><b>Topic drift:</b> AS105 → AS200 → "yes" still leans toward AS105.</li>
+        <li><b>Blurred vector:</b> one embedding of 10 messages averages every topic.</li>
+        <li><b>Truncation:</b> the model keeps the first ~512 tokens, which are the oldest messages.</li>
+        <li><b>Keyword noise:</b> FULLTEXT with many words matches almost every chunk.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="tag bad">rejected</span> Send history to the AI with no sources</h3>
+      <p>The prompt says "answer only from the sources". With none, the AI either says "I don't know" anyway or makes up specs from memory. Made-up specs are worse for a product-spec bot.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag warn">tried first</span> Context search only when the question fails</h3>
+      <p>Fixed "yes" (no match → retry). It did <b>not</b> fix "specification?": the wrong page passed the gate, so the retry never ran. Replaced by always searching both and merging.</p>
+    </div>
+    <div class="card">
+      <h3><span class="tag good">chosen</span> Always both searches + take-turns merge</h3>
+      <ul>
+        <li>No extra AI call, no extra delay before streaming.</li>
+        <li>Standalone questions and topic switches keep their own top hit.</li>
+        <li>Cost: one more search on the server and one more embedding in the browser per follow-up.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <h2 id="code"><span class="n">7</span>Where in the code</h2>
+  <div class="tablewrap">
+    <table>
+      <tr><th>File</th><th>What it does</th></tr>
+      <tr><td><code>assets/src/widget/useChat.ts</code></td><td><code>contextQuery()</code> builds the text; <code>send()</code> embeds it and posts <code>contextQuery</code> + <code>contextVector</code>. Constants <code>CONTEXT_USER_MESSAGES</code>, <code>CONTEXT_MESSAGE_CHARS</code>, <code>CONTEXT_QUERY_MAX_CHARS</code>.</td></tr>
+      <tr><td><code>includes/Rest/ChatController.php</code></td><td>Accepts the two new args (<code>CONTEXT_QUERY_MAX_CHARS = 1500</code>), builds a second <code>SearchQuery</code> with the same model key.</td></tr>
+      <tr><td><code>includes/Rest/AnswerResponder.php</code></td><td>Passes the context query through to <code>answer()</code> / <code>stream()</code>.</td></tr>
+      <tr><td><code>includes/Chat/AnswerService.php</code></td><td><code>run()</code> runs both searches; <code>find()</code> = search + gate + source filter; <code>merge()</code> = take turns; <code>merged_result()</code> = one result for logs.</td></tr>
+      <tr><td><code>includes/Chat/AnswerResult.php</code></td><td><code>context_query</code> (set only when the context search changed the sources); shown as <code>contextQuery</code> in debug output.</td></tr>
+      <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td>Stores <code>contextQuery</code> inside the <code>sources</code> JSON of each message. No schema change.</td></tr>
+      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>Unchanged: history still goes in as real user/assistant messages.</td></tr>
+    </table>
+  </div>
+  <h3 style="margin-top:22px">Debugging a follow-up</h3>
+  <pre><code>wp db query "SELECT id, question, status, reason, top_score,
+  JSON_EXTRACT(sources,'$.contextQuery') AS context,
+  JSON_EXTRACT(sources,'$.sent') AS sent
+FROM wp_mnaisp_messages ORDER BY id DESC LIMIT 5"</code></pre>
+  <ul>
+    <li><code>reason = model_dont_know</code> → search passed, but the AI found nothing usable in the sources. Check <code>found</code> / <code>sent</code>.</li>
+    <li><code>reason = below_threshold</code> / <code>no_matches</code> → both searches failed the gate.</li>
+    <li><code>contextQuery</code> not null → the context search changed the sources.</li>
+  </ul>
+
+  <!-- 8 -->
+  <h2 id="limits"><span class="n">8</span>Limits &amp; next ideas</h2>
+  <ul>
+    <li><b>top_k matters.</b> On a follow-up the slots are shared between two searches. With 2, each search gets only 1. Dev site raised to <b>4</b> (default for new installs is 6).</li>
+    <li><b>min_score 0.5 is weak</b> for bge-small: unrelated pages score ~0.65. Worth tuning.</li>
+    <li><b>Keyword-only mode:</b> the context search on many words can bring loosely related chunks. The AI filters them, but they use slots.</li>
+    <li><b>Old cached widgets</b> don't send <code>contextQuery</code> until the page cache refreshes. They behave like before.</li>
+    <li><b>Playground</b> doesn't send a context query, so it tests single questions only.</li>
+    <li><b>Admin Conversations screen</b> doesn't display <code>contextQuery</code> yet (stored, not shown).</li>
+    <li><b>Next step if needed:</b> AI query rewrite. A small AI call turns history + question into a standalone query ("AS105 specifications"). Best quality, but adds an extra call and delay. Could run only for short questions or ones with pronouns.</li>
+  </ul>
+</main>
+</body>
+</html>
