@@ -307,6 +307,25 @@ specification?</code></pre>
   </div>
   <div class="callout warn"><b>Custom prompts don't get it.</b> The rule is only in <code>PromptBuilder::DEFAULT_TEMPLATE</code>. A site with a saved custom template (Settings → Prompt) must have the line pasted in by hand. Also keep the "I don't know" text a plain "no answer" sentence: if it asks for clarification itself, the log can't tell "unclear" from "not in the sources".</div>
 
+  <h3 style="margin-top:28px">When the visitor wants something only the team can do</h3>
+  <p>Live example: "We are interested in buying 10ft of the NMUF 4/30-4046 SJ wire, could we have a quotation?" The search found the right product, but prices are not in the sources. The rules left one path: the exact "I don't know" text (the clarifying rule even says "do not ask when the sources simply lack the answer"). A buyer got an apology.</p>
+  <p>Second rule added to the default prompt:</p>
+  <pre><code>- If the visitor wants something the website team must handle (a price, quote, order, stock check,
+  sample or delivery), do not use the text above. Confirm what the sources say about the product
+  they named, say the team can help with the rest, and give the contact details or quote page if a
+  source has them.</code></pre>
+  <div class="card">
+    <h3>After (tested 2026-11-16, keyword search)</h3>
+    <div class="chat">
+      <div class="msg user">Hi! We are interested in buying 10ft of the NMUF 4/30-4046 SJ wire, could we have a quotation?</div>
+      <div class="msg ai ok">Yes, NMUF 4/30-4046 SJ is listed on the site. It's a 4-conductor, 30 AWG cable … 0.082" nominal O.D. [2] The team can help with a quotation for 10 ft. Please contact them directly for pricing and ordering. <small>logged as answered</small></div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Still missing: the contact details.</b> A quote question does not match the Contact page, so the AI says "contact them" without an email or link. Fix now with content: a knowledge-base FAQ "How do I request a quote or pricing?" with email, phone and form link. Later option: a "Sales contact" setting put into the prompt as a <code>{contact}</code> placeholder, so it is always there.</div>
+
+  <h3 style="margin-top:28px">Duplicate sources</h3>
+  <p>The same live prompt had 5 sources but only 2 different texts: the site has the "PVC Multiconductor Cable" page twice (posts 16100 and 16104). <code>AnswerService::unique_content()</code> now drops hits whose text matches a better-ranked hit (ignoring case and spacing) before the prompt is built. Slots are not refilled, so a duplicate means one source fewer, not a different one. Best fix is still on the site: remove or exclude the copy.</p>
+
   <!-- 7 -->
   <h2 id="code"><span class="n">7</span>Where in the code</h2>
   <div class="tablewrap">
@@ -315,10 +334,10 @@ specification?</code></pre>
       <tr><td><code>assets/src/widget/useChat.ts</code></td><td><code>contextQuery()</code> builds the text; <code>send()</code> embeds it and posts <code>contextQuery</code> + <code>contextVector</code>. Constants <code>CONTEXT_USER_MESSAGES</code>, <code>CONTEXT_MESSAGE_CHARS</code>, <code>CONTEXT_QUERY_MAX_CHARS</code>.</td></tr>
       <tr><td><code>includes/Rest/ChatController.php</code></td><td>Accepts the two new args (<code>CONTEXT_QUERY_MAX_CHARS = 1500</code>), builds a second <code>SearchQuery</code> with the same model key.</td></tr>
       <tr><td><code>includes/Rest/AnswerResponder.php</code></td><td>Passes the context query through to <code>answer()</code> / <code>stream()</code>.</td></tr>
-      <tr><td><code>includes/Chat/AnswerService.php</code></td><td><code>run()</code> runs both searches; <code>find()</code> = search + gate + source filter; <code>merge()</code> = take turns; <code>merged_result()</code> = one result for logs.</td></tr>
+      <tr><td><code>includes/Chat/AnswerService.php</code></td><td><code>run()</code> runs both searches; <code>find()</code> = search + gate + source filter; <code>merge()</code> = take turns; <code>merged_result()</code> = one result for logs; <code>unique_content()</code> = drop sources with repeated text.</td></tr>
       <tr><td><code>includes/Chat/AnswerResult.php</code></td><td><code>context_query</code> (set only when the context search changed the sources); shown as <code>contextQuery</code> in debug output.</td></tr>
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td>Stores <code>contextQuery</code> inside the <code>sources</code> JSON of each message. No schema change.</td></tr>
-      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>History still goes in as real user/assistant messages. <code>DEFAULT_TEMPLATE</code> has the clarifying-question rule (see section 6).</td></tr>
+      <tr><td><code>includes/Chat/PromptBuilder.php</code></td><td>History still goes in as real user/assistant messages. <code>DEFAULT_TEMPLATE</code> has the clarifying-question rule and the price / quote / order rule (see section 6).</td></tr>
     </table>
   </div>
   <h3 style="margin-top:22px">Debugging a follow-up</h3>
