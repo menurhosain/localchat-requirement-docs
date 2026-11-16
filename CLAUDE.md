@@ -79,6 +79,15 @@ Claude's role: research assistant.
   badge = who answers (AI / You / other agent). Guest chat gets user_id when visitor logs in mid-chat (on question,
   message to team, or widget check-in; only fills empty user_id, never moves a chat to another account).
 
+- 2026-11-16: Conversation search (WWC branch, cherry-picked to master af65513): follow-ups search question + context
+  text and merge in turns; prompt rules clarifying question, price/quote → team + {contact} setting; duplicate sources
+  dropped. Doc docs/conversation-search.html. Branch wwc-group-branding = standalone (never merged into master).
+- 2026-11-16: Live agent requests committed 7c30e0f (master): phrase check before search + [[HANDOFF]] AI marker
+  (hidden from stream), "are you a bot?" → offer + yes, honest reply (team online = Live chat tab polled ≤ 60 s;
+  offline/off → contact), 5-min expiry note, events requested / requested_offline / request_expired (no schema
+  change), Live chat badge "Wants a person" + sort + banner, 3 reply texts on Live chat tab, log status handoff.
+  Doc docs/live-agent-request.html. Not merged into WWC yet.
+
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
 - [ ] Existing plugins in market: features, pricing, reviews, weaknesses (5 done)
@@ -250,3 +259,4 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
+- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, code map; update when HandoffDetector / request_person change
