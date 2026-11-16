@@ -115,7 +115,7 @@
 <main>
   <h1>Asking for a live agent</h1>
   <p class="lead">A visitor can ask for a person ("live agent", "can I talk to a human?") instead of the AI. The request goes to the team in the Live chat tab, the visitor gets an honest reply, and the AI keeps helping until someone takes over.</p>
-  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>, <code>ecdd321</code>, <code>7fdc2e6</code>) · Builds on live chat takeover (D5)</p>
+  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>, <code>ecdd321</code>, <code>7fdc2e6</code>, <code>01064ea</code>) · Builds on live chat takeover (D5)</p>
 
   <nav class="toc">
     <a href="#problem">1. The problem</a>
@@ -126,6 +126,7 @@
     <a href="#presence">5b. Is a team member there?</a>
     <a href="#notify">5c. Browser notifications</a>
     <a href="#email">5d. Email alerts</a>
+    <a href="#channels">5e. Alert channels</a>
     <a href="#data">6. Data &amp; log</a>
     <a href="#code">7. Where in the code</a>
     <a href="#limits">8. Limits &amp; next ideas</a>
@@ -329,7 +330,7 @@
     <li><b>Request</b> = the moment <code>LiveChatService::request_person()</code> runs: phrase check, "yes" to the offer, or the AI marker. A repeat while the request is still open sends nothing.</li>
     <li><b>Live chat off</b> (recording off): counts as "no one online"; the email says the chat wasn't saved (no Live chat link).</li>
     <li><b>New chat</b> = the first message of a new conversation (<code>find_or_create()</code> created it). If that first message is itself a request, only the request email goes out.</li>
-    <li><b>Limits:</b> one request email per chat per 10 min (transient); 20 new-chat emails per hour per site (hourly counter). Filters <code>mnaisp_email_alert_request_gap</code>, <code>mnaisp_email_alerts_new_per_hour</code>.</li>
+    <li><b>Limits:</b> one request email per chat per 10 min (transient); 20 new-chat emails per hour per site (hourly counter). Filters <code>mnaisp_alert_request_gap</code>, <code>mnaisp_alerts_new_per_hour</code>.</li>
     <li><b>Visitor:</b> the "no one available" reply adds "We've let the team know by email." only when an email was queued.</li>
   </ul>
 
@@ -337,7 +338,7 @@
   <div class="pipe">
     <div class="stage" style="--c: var(--q)">
       <h3>1. Queue</h3>
-      <ul><li>During the chat request: <code>EmailAlerts</code> keeps the email in memory (one per chat)</li><li>Hooks <code>shutdown</code> (priority 100)</li></ul>
+      <ul><li>During the chat request: <code>AlertService</code> builds an <code>Alert</code>; <code>AlertDispatcher</code> keeps it in memory (one per chat)</li><li>Hooks <code>shutdown</code> (priority 100)</li></ul>
     </div>
     <div class="arrowh">→</div>
     <div class="stage" style="--c: var(--ctx)">
@@ -347,19 +348,66 @@
     <div class="arrowh">→</div>
     <div class="stage" style="--c: var(--good)">
       <h3>3. Send</h3>
-      <ul><li><code>wp_mail()</code> in the same request: <b>arrives right away</b></li></ul>
+      <ul><li>Every configured channel's <code>send()</code> (email: <code>wp_mail()</code>) in the same request: <b>arrives right away</b></li></ul>
     </div>
   </div>
   <div class="tablewrap">
     <table>
       <tr><th>Server</th><th>How</th><th>Email arrives</th></tr>
       <tr><td>PHP-FPM / LiteSpeed (most hosts)</td><td>Close connection, then <code>wp_mail()</code></td><td>Immediately</td></tr>
-      <tr><td>Apache mod_php (no finish function)</td><td><code>wp_schedule_single_event()</code> + <code>spawn_cron()</code>: background request to the site</td><td>A few seconds later</td></tr>
+      <tr><td>Apache mod_php (no finish function)</td><td><code>wp_schedule_single_event( mnaisp_send_alert )</code> + <code>spawn_cron()</code>: background request to the site</td><td>A few seconds later</td></tr>
       <tr><td>Same, with <code>DISABLE_WP_CRON</code> + server cron</td><td>Next cron run</td><td>1–5 min (card shows a warning)</td></tr>
       <tr><td>Loopback blocked + no traffic</td><td>Next page visit runs WP-Cron</td><td>Late; never lost</td></tr>
     </table>
   </div>
   <p style="margin-top:12px"><b>Email content</b> (plain text): subject <code>[Site] A visitor asks for a person</code> / <code>[Site] New chat: "…"</code>; the visitor's message, up to 6 earlier messages, page, visitor (name + email if logged in), time, "Answer in Live chat: …/wp-admin/admin.php?page=mnaisp#/live/&lt;id&gt;". Privacy text mentions the emails.</p>
+
+  <h2 id="channels"><span class="n">5e</span>Alert channels (email now; Telegram, SMS, WhatsApp later)</h2>
+  <p>One interface, different implementations (channel / strategy pattern). Deciding <i>when</i> and <i>what</i> is separate from <i>how it is delivered</i>, so a new network only implements the interface.</p>
+  <div class="pipe">
+    <div class="stage" style="--c: var(--q)">
+      <h3>AlertService</h3>
+      <ul><li>Triggers (request, new chat), team online, limits</li><li>Builds an <code>Alert</code></li><li>No channel-specific code</li></ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--ctx)">
+      <h3>AlertDispatcher</h3>
+      <ul><li>Channel registry</li><li>Queue → after the reply / WP-Cron</li><li>Sends to every configured channel; one failing doesn't stop the others</li></ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--good)">
+      <h3>AlertChannel</h3>
+      <ul><li><code>EmailChannel</code> (now)</li><li><code>TelegramChannel</code>, <code>SmsChannel</code>, <code>WhatsAppChannel</code> (later)</li></ul>
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Piece</th><th>File</th><th>What it is</th></tr>
+      <tr><td><code>Alert</code></td><td><code>includes/Alerts/Alert.php</code></td><td>The message, channel-neutral: <code>type</code> (request / new_conversation / test), <code>title</code>, <code>lines</code> (plain text), <code>url</code> + <code>url_label</code> (Answer in Live chat), <code>conversation_id</code>, <code>site</code>. <code>text_lines()</code> = lines + link; <code>to_array()</code> / <code>from_array()</code> for WP-Cron.</td></tr>
+      <tr><td><code>AlertChannel</code></td><td><code>includes/Alerts/AlertChannel.php</code></td><td>Interface: <code>id()</code>, <code>label()</code>, <code>is_configured()</code>, <code>send( Alert ): bool</code>. Return false on delivery problems, don't throw.</td></tr>
+      <tr><td><code>EmailChannel</code></td><td><code>includes/Alerts/EmailChannel.php</code></td><td><code>wp_mail()</code>, subject <code>[Site] title</code>, body <code>text_lines()</code>. Recipients from <code>alert_emails</code>. <code>send_to()</code> for the test email.</td></tr>
+      <tr><td><code>AlertDispatcher</code></td><td><code>includes/Alerts/AlertDispatcher.php</code></td><td>Registry (filter <code>mnaisp_alert_channels</code>), <code>queue()</code>, <code>flush()</code> on shutdown, <code>deliver()</code>, cron hook <code>mnaisp_send_alert</code>, <code>delivery()</code>. One instance per request (<code>Plugin::alert_dispatcher()</code>).</td></tr>
+      <tr><td><code>AlertService</code></td><td><code>includes/Alerts/AlertService.php</code></td><td><code>request()</code>, <code>new_conversation()</code>, <code>test_alert()</code>. Called by <code>LiveChatService</code> and <code>ConversationLogger</code>.</td></tr>
+    </table>
+  </div>
+  <h3 style="margin-top:18px">Adding a channel</h3>
+  <pre><code>final class TelegramChannel implements AlertChannel {
+	public function id(): string { return 'telegram'; }
+	public function label(): string { return 'Telegram'; }
+	public function is_configured(): bool { /* bot token + chat id saved */ }
+	public function send( Alert $alert ): bool {
+		/* POST https://api.telegram.org/bot&lt;token&gt;/sendMessage
+		   text = $alert->title + $alert->text_lines() */
+	}
+}
+
+// Plugin::alert_dispatcher(): new AlertDispatcher( array( $this->email_channel(), $this->telegram_channel() ) )
+// or from outside: add_filter( 'mnaisp_alert_channels', fn( $channels ) => [ ...$channels, new TelegramChannel() ] );</code></pre>
+  <ul>
+    <li>Triggers, "only when no one is online", limits, queueing and WP-Cron work for the new channel without changes.</li>
+    <li>Each channel needs its own settings (token, phone number…) and a "Send test" for it.</li>
+    <li>Not built yet: per-channel triggers (e.g. SMS only for requests). Today one trigger setting applies to all channels.</li>
+  </ul>
 
   <h2 id="data"><span class="n">6</span>Data &amp; log</h2>
   <p>No schema change: requests are <code>event</code> rows, like joined / handed back.</p>
@@ -392,7 +440,7 @@
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td><code>finish_reply()</code>; handoff status.</td></tr>
       <tr><td><code>assets/src/pages/LiveChat.tsx</code></td><td>Badge, sort, banner, <code>LiveChatSettingsCard</code>.</td></tr>
       <tr><td><code>assets/src/widget/useChat.ts</code>, <code>live.ts</code></td><td>New events; expiry note as an answer bubble (links render).</td></tr>
-      <tr><td><code>includes/Conversations/EmailAlerts.php</code></td><td>New. Triggers, limits, email text, queue → shutdown / WP-Cron (<code>CRON_HOOK</code>), test email, <code>delivery()</code>.</td></tr>
+      <tr><td><code>includes/Alerts/*.php</code></td><td>New. <code>Alert</code>, <code>AlertChannel</code>, <code>EmailChannel</code>, <code>AlertDispatcher</code>, <code>AlertService</code> (see <a href="#channels">5e</a>).</td></tr>
       <tr><td><code>assets/src/shared/notify.ts</code></td><td>New. Browser notifications: permission, per-browser choice, "not watching" check.</td></tr>
       <tr><td><code>includes/Support/ViteAssets.php</code></td><td>Built entry without <code>?ver</code> (app ran twice).</td></tr>
       <tr><td><code>assets/src/components/MessageRow.tsx</code>, <code>PromptCard.tsx</code></td><td>Labels; warning when a custom prompt lacks <code>[[HANDOFF]]</code>.</td></tr>

@@ -97,6 +97,10 @@ Claude's role: research assistant.
   always (defaults offline / never), queued → shutdown + fastcgi/litespeed_finish_request, else WP-Cron single event;
   limits 1 request email per chat per 10 min, 20 new-chat emails/h; visitor reply adds "We've let the team know by
   email" only when sent. Doc sections 5c/5d in docs/live-agent-request.html. Not merged into WWC yet.
+- 2026-11-16: Alert channels refactor 01064ea (user's call: one API, many networks): includes/Alerts/ Alert (neutral
+  message) + AlertChannel interface (id/label/is_configured/send) + EmailChannel + AlertDispatcher (registry, filter
+  mnaisp_alert_channels, queue → shutdown/WP-Cron hook mnaisp_send_alert) + AlertService (triggers, limits). Next
+  channels: Telegram, SMS, WhatsApp. Filters renamed mnaisp_alert_request_gap, mnaisp_alerts_new_per_hour. Doc 5e.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -269,4 +273,4 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
-- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), code map; update when HandoffDetector / request_person / presence times change
+- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), alert channel pattern, code map; update when HandoffDetector / request_person / presence times change
