@@ -101,6 +101,9 @@ Claude's role: research assistant.
   message) + AlertChannel interface (id/label/is_configured/send) + EmailChannel + AlertDispatcher (registry, filter
   mnaisp_alert_channels, queue → shutdown/WP-Cron hook mnaisp_send_alert) + AlertService (triggers, limits). Next
   channels: Telegram, SMS, WhatsApp. Filters renamed mnaisp_alert_request_gap, mnaisp_alerts_new_per_hour. Doc 5e.
+- 2026-11-16: HTML email template b359b2a: EmailTemplate (white card, widget accent colour, quote, transcript, details,
+  button, table + inline styles), plain text as AltBody. Alert now structured (intro/message/transcript/details/note/
+  url); text_lines() for text-only channels. Pushed master + research repo.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.

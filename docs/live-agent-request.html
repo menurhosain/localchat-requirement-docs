@@ -115,7 +115,7 @@
 <main>
   <h1>Asking for a live agent</h1>
   <p class="lead">A visitor can ask for a person ("live agent", "can I talk to a human?") instead of the AI. The request goes to the team in the Live chat tab, the visitor gets an honest reply, and the AI keeps helping until someone takes over.</p>
-  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>, <code>ecdd321</code>, <code>7fdc2e6</code>, <code>01064ea</code>) · Builds on live chat takeover (D5)</p>
+  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>, <code>ecdd321</code>, <code>7fdc2e6</code>, <code>01064ea</code>, <code>b359b2a</code>) · Builds on live chat takeover (D5)</p>
 
   <nav class="toc">
     <a href="#problem">1. The problem</a>
@@ -360,7 +360,32 @@
       <tr><td>Loopback blocked + no traffic</td><td>Next page visit runs WP-Cron</td><td>Late; never lost</td></tr>
     </table>
   </div>
-  <p style="margin-top:12px"><b>Email content</b> (plain text): subject <code>[Site] A visitor asks for a person</code> / <code>[Site] New chat: "…"</code>; the visitor's message, up to 6 earlier messages, page, visitor (name + email if logged in), time, "Answer in Live chat: …/wp-admin/admin.php?page=mnaisp#/live/&lt;id&gt;". Privacy text mentions the emails.</p>
+  <h3 style="margin-top:18px">What the email looks like</h3>
+  <p>HTML card (<code>EmailTemplate</code>) with the plain text as the alternative part. Subject <code>[Site] A visitor asks for a person</code> / <code>[Site] New chat: "…"</code>.</p>
+  <div class="card" style="max-width:560px;padding:0;overflow:hidden">
+    <div style="height:4px;background:var(--q)"></div>
+    <div style="padding:22px 24px">
+      <p style="margin:0 0 4px;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Site name</p>
+      <h3 style="margin:0 0 8px;font-size:1.15rem">A visitor asks for a person</h3>
+      <p style="margin:0 0 6px;font-size:.9rem;color:var(--muted)">A visitor asked to talk to a person in the chat. No one from the team had the Live chat tab open, so the visitor was given your contact details.</p>
+      <div style="margin:14px 0 0;padding:10px 14px;border-left:3px solid var(--q);background:var(--code-bg);border-radius:0 8px 8px 0">
+        <div style="font-size:.75rem;font-weight:600;color:var(--muted)">Visitor</div>
+        <div>Could you transfer me to a live agent</div>
+      </div>
+      <p style="margin:16px 0 4px;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Earlier in this chat</p>
+      <div style="font-size:.85rem"><b style="color:var(--muted)">Visitor</b> Do you have any used equipment…<br><b style="color:var(--muted)">AI</b> Yes, our used equipment listings include…</div>
+      <div style="margin:14px 0 0;padding-top:10px;border-top:1px solid var(--border);font-size:.85rem;color:var(--muted)">Page · Visitor · Time</div>
+      <div style="margin:18px 0 0"><span style="display:inline-block;padding:9px 18px;border-radius:8px;background:var(--q);color:#fff;font-weight:600;font-size:.9rem">Answer in Live chat →</span></div>
+    </div>
+  </div>
+  <ul style="margin-top:12px">
+    <li><b>Parts:</b> site name, title, intro, the visitor's message (quote), up to 6 earlier messages (Visitor / AI / Team), details (page link, visitor name + email if logged in, time), amber warning only when live chat was off, button, footer "Change email alerts" → Live chat tab.</li>
+    <li><b>Colour:</b> the widget's accent colour (Style / Widget settings).</li>
+    <li><b>Email-safe:</b> table layout, inline styles only, no images or web fonts, max 560 px, every text escaped. Hidden preview line = the visitor's message.</li>
+    <li><b>Plain text:</b> <code>Alert::text_lines()</code> → <code>AltBody</code> (set via <code>phpmailer_init</code> for that one email).</li>
+    <li><b>Test email:</b> same layout, sample message, "Open Live chat" button.</li>
+    <li>Privacy text mentions the emails.</li>
+  </ul>
 
   <h2 id="channels"><span class="n">5e</span>Alert channels (email now; Telegram, SMS, WhatsApp later)</h2>
   <p>One interface, different implementations (channel / strategy pattern). Deciding <i>when</i> and <i>what</i> is separate from <i>how it is delivered</i>, so a new network only implements the interface.</p>
@@ -383,9 +408,10 @@
   <div class="tablewrap">
     <table>
       <tr><th>Piece</th><th>File</th><th>What it is</th></tr>
-      <tr><td><code>Alert</code></td><td><code>includes/Alerts/Alert.php</code></td><td>The message, channel-neutral: <code>type</code> (request / new_conversation / test), <code>title</code>, <code>lines</code> (plain text), <code>url</code> + <code>url_label</code> (Answer in Live chat), <code>conversation_id</code>, <code>site</code>. <code>text_lines()</code> = lines + link; <code>to_array()</code> / <code>from_array()</code> for WP-Cron.</td></tr>
+      <tr><td><code>Alert</code></td><td><code>includes/Alerts/Alert.php</code></td><td>The message, channel-neutral and structured: <code>type</code> (request / new_conversation / test), <code>title</code>, <code>intro</code>, <code>message</code> (visitor), <code>transcript</code> (who + text), <code>details</code> (label → value), <code>note</code>, <code>url</code> + <code>url_label</code>, <code>conversation_id</code>, <code>site</code>. Each channel lays it out its own way; <code>text_lines()</code> = plain text for text-only channels; <code>to_array()</code> / <code>from_array()</code> for WP-Cron.</td></tr>
       <tr><td><code>AlertChannel</code></td><td><code>includes/Alerts/AlertChannel.php</code></td><td>Interface: <code>id()</code>, <code>label()</code>, <code>is_configured()</code>, <code>send( Alert ): bool</code>. Return false on delivery problems, don't throw.</td></tr>
-      <tr><td><code>EmailChannel</code></td><td><code>includes/Alerts/EmailChannel.php</code></td><td><code>wp_mail()</code>, subject <code>[Site] title</code>, body <code>text_lines()</code>. Recipients from <code>alert_emails</code>. <code>send_to()</code> for the test email.</td></tr>
+      <tr><td><code>EmailChannel</code></td><td><code>includes/Alerts/EmailChannel.php</code></td><td><code>wp_mail()</code>, subject <code>[Site] title</code>, HTML from <code>EmailTemplate</code> + <code>text_lines()</code> as plain-text part. Recipients from <code>alert_emails</code>. <code>send_to()</code> for the test email.</td></tr>
+      <tr><td><code>EmailTemplate</code></td><td><code>includes/Alerts/EmailTemplate.php</code></td><td><code>render( Alert ): string</code>: the HTML card. Accent colour and footer link from <code>Plugin::email_channel()</code>.</td></tr>
       <tr><td><code>AlertDispatcher</code></td><td><code>includes/Alerts/AlertDispatcher.php</code></td><td>Registry (filter <code>mnaisp_alert_channels</code>), <code>queue()</code>, <code>flush()</code> on shutdown, <code>deliver()</code>, cron hook <code>mnaisp_send_alert</code>, <code>delivery()</code>. One instance per request (<code>Plugin::alert_dispatcher()</code>).</td></tr>
       <tr><td><code>AlertService</code></td><td><code>includes/Alerts/AlertService.php</code></td><td><code>request()</code>, <code>new_conversation()</code>, <code>test_alert()</code>. Called by <code>LiveChatService</code> and <code>ConversationLogger</code>.</td></tr>
     </table>
@@ -440,7 +466,7 @@
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td><code>finish_reply()</code>; handoff status.</td></tr>
       <tr><td><code>assets/src/pages/LiveChat.tsx</code></td><td>Badge, sort, banner, <code>LiveChatSettingsCard</code>.</td></tr>
       <tr><td><code>assets/src/widget/useChat.ts</code>, <code>live.ts</code></td><td>New events; expiry note as an answer bubble (links render).</td></tr>
-      <tr><td><code>includes/Alerts/*.php</code></td><td>New. <code>Alert</code>, <code>AlertChannel</code>, <code>EmailChannel</code>, <code>AlertDispatcher</code>, <code>AlertService</code> (see <a href="#channels">5e</a>).</td></tr>
+      <tr><td><code>includes/Alerts/*.php</code></td><td>New. <code>Alert</code>, <code>AlertChannel</code>, <code>EmailChannel</code>, <code>EmailTemplate</code>, <code>AlertDispatcher</code>, <code>AlertService</code> (see <a href="#channels">5e</a>).</td></tr>
       <tr><td><code>assets/src/shared/notify.ts</code></td><td>New. Browser notifications: permission, per-browser choice, "not watching" check.</td></tr>
       <tr><td><code>includes/Support/ViteAssets.php</code></td><td>Built entry without <code>?ver</code> (app ran twice).</td></tr>
       <tr><td><code>assets/src/components/MessageRow.tsx</code>, <code>PromptCard.tsx</code></td><td>Labels; warning when a custom prompt lacks <code>[[HANDOFF]]</code>.</td></tr>
