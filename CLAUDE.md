@@ -90,6 +90,13 @@ Claude's role: research assistant.
 - 2026-11-16: Presence fixes (user's call: ONE 5-min rule): 6c6f93e team online = Live chat tab polled ≤ 5 min;
   be04912 list keeps polling in hidden tabs (30 s), visitor sees "<team> is away" after 5 min agent quiet, hand-back
   after 5 min when visitor wrote (quiet chat 10 min). Not merged into WWC yet.
+- 2026-11-16: Browser notifications ecdd321 (Notification API from the open page; visitor bell + offer after request,
+  admin "Turn on notifications"; only when page not watched; polling delay up to 30 s hidden = OK, user's call).
+  Fix 74c329b: admin app ran twice (?ver on built entry vs lazy chunk imports) → entry loads without ?ver.
+- 2026-11-16: Email alerts 7fdc2e6: recipients (max 10, default admin email), request + new chat each never/offline/
+  always (defaults offline / never), queued → shutdown + fastcgi/litespeed_finish_request, else WP-Cron single event;
+  limits 1 request email per chat per 10 min, 20 new-chat emails/h; visitor reply adds "We've let the team know by
+  email" only when sent. Doc sections 5c/5d in docs/live-agent-request.html. Not merged into WWC yet.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -262,4 +269,4 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
-- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), code map; update when HandoffDetector / request_person / presence times change
+- `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), code map; update when HandoffDetector / request_person / presence times change

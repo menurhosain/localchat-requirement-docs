@@ -115,7 +115,7 @@
 <main>
   <h1>Asking for a live agent</h1>
   <p class="lead">A visitor can ask for a person ("live agent", "can I talk to a human?") instead of the AI. The request goes to the team in the Live chat tab, the visitor gets an honest reply, and the AI keeps helping until someone takes over.</p>
-  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>) · Builds on live chat takeover (D5)</p>
+  <p class="meta">Plugin: compact-local-chatbot · Built 2026-11-16 on <code>master</code> (commits <code>7c30e0f</code>, <code>6c6f93e</code>, <code>be04912</code>, <code>ecdd321</code>, <code>7fdc2e6</code>) · Builds on live chat takeover (D5)</p>
 
   <nav class="toc">
     <a href="#problem">1. The problem</a>
@@ -124,6 +124,8 @@
     <a href="#reply">4. What the visitor sees</a>
     <a href="#team">5. What the team sees</a>
     <a href="#presence">5b. Is a team member there?</a>
+    <a href="#notify">5c. Browser notifications</a>
+    <a href="#email">5d. Email alerts</a>
     <a href="#data">6. Data &amp; log</a>
     <a href="#code">7. Where in the code</a>
     <a href="#limits">8. Limits &amp; next ideas</a>
@@ -257,7 +259,7 @@
       </ul>
     </div>
   </div>
-  <div class="callout warn"><b>No alerts yet.</b> Only works while someone has the Live chat tab open. Email / sound / Slack alerts belong to Smart Sales Alerts (D6).</div>
+  <div class="callout good"><b>Alerts.</b> With the tab open: browser notifications (<a href="#notify">5c</a>). With no one online: email alerts (<a href="#email">5d</a>).</div>
 
   <h2 id="presence"><span class="n">5b</span>Is a team member there?</h2>
   <p>One rule, <b>5 minutes</b>, everywhere. Presence = the team member's Live chat tab keeps polling.</p>
@@ -282,6 +284,82 @@
     </table>
   </div>
   <p style="margin-top:12px">Trade-off: up to 5 minutes after the last team member really left, a new request still hears "I've asked a team member…"; the 5-minute request expiry then gives the contact details. Filters: <code>mnaisp_live_team_online_seconds</code>, <code>mnaisp_live_agent_idle_waiting_seconds</code>, <code>mnaisp_live_agent_idle_seconds</code>, <code>mnaisp_live_request_timeout_seconds</code>.</p>
+
+  <h2 id="notify"><span class="n">5c</span>Browser notifications</h2>
+  <p>Notification API from the open page: no service worker, no push server. Shown only while the person isn't looking at the page (<code>document.hidden</code> or <code>!document.hasFocus()</code>: another tab or window in front, or minimized). A closed tab gets nothing.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Visitor (widget)</h3>
+      <ul>
+        <li>🔔 / 🔕 button in the chat header; choice per browser (<code>localStorage</code> <code>mnaisp-chat-notify</code>)</li>
+        <li>After asking for a person: bar "Get a notification when the team replies… Turn on / No thanks" (a click, so the browser may ask)</li>
+        <li>On: AI answer, team reply, "{team} joined", the "no one joined" note</li>
+        <li>Click: focuses the page, opens the chat (<code>mnaisp:open</code> event → loader)</li>
+        <li>Site switch: Widget settings → "Let visitors turn on browser notifications" (default on)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Admin (Live chat tab)</h3>
+      <ul>
+        <li>"Turn on notifications" button; per browser (<code>mnaisp-live-notify</code>)</li>
+        <li>"&lt;name&gt; wants a person", "New message from &lt;name&gt;" (list sends <code>lastVisitorMessageId</code> / <code>lastVisitorText</code>)</li>
+        <li>Click: opens that chat; one notification per chat (tag)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout warn"><b>Delay.</b> AI answers are instant (same connection). Team replies and new visitor messages arrive by polling: up to 30 s in a background tab, up to ~60 s after Chrome throttles a tab hidden for 5+ minutes. Kept like this on purpose (user's call); faster = shorter hidden-tab polling + a Web Worker timer.</div>
+  <p>Found while testing: the admin app ran <b>twice</b> (WordPress loaded <code>main-&lt;hash&gt;.js?ver=…</code>, lazy chunks import it without <code>?ver</code> → two modules, two React apps, double polling). Fixed in <code>ViteAssets</code> (<code>74c329b</code>): the built entry loads without <code>?ver</code>.</p>
+
+  <h2 id="email"><span class="n">5d</span>Email alerts</h2>
+  <p>"Email alerts" card on the Live chat tab (admins): recipients (one per line, max 10, default the site admin email) and, per trigger, <b>Never / Only when no one is online / Always</b>. "Send test email" uses the addresses in the form.</p>
+
+  <h3 style="margin-top:18px">When is an email dispatched?</h3>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Trigger</th><th>Setting (default in bold)</th><th>Team online (tab polled ≤ 5 min)</th><th>No one online</th></tr>
+      <tr><td rowspan="3">Visitor asks for a person</td><td>Never</td><td>–</td><td>–</td></tr>
+      <tr><td><b>Only when no one is online</b></td><td>– (team sees it in the tab)</td><td>email</td></tr>
+      <tr><td>Always</td><td>email</td><td>email</td></tr>
+      <tr><td rowspan="3">New chat starts (first message)</td><td><b>Never</b></td><td>–</td><td>–</td></tr>
+      <tr><td>Only when no one is online</td><td>–</td><td>email</td></tr>
+      <tr><td>Always</td><td>email</td><td>email</td></tr>
+    </table>
+  </div>
+  <ul style="margin-top:12px">
+    <li><b>Request</b> = the moment <code>LiveChatService::request_person()</code> runs: phrase check, "yes" to the offer, or the AI marker. A repeat while the request is still open sends nothing.</li>
+    <li><b>Live chat off</b> (recording off): counts as "no one online"; the email says the chat wasn't saved (no Live chat link).</li>
+    <li><b>New chat</b> = the first message of a new conversation (<code>find_or_create()</code> created it). If that first message is itself a request, only the request email goes out.</li>
+    <li><b>Limits:</b> one request email per chat per 10 min (transient); 20 new-chat emails per hour per site (hourly counter). Filters <code>mnaisp_email_alert_request_gap</code>, <code>mnaisp_email_alerts_new_per_hour</code>.</li>
+    <li><b>Visitor:</b> the "no one available" reply adds "We've let the team know by email." only when an email was queued.</li>
+  </ul>
+
+  <h3 style="margin-top:18px">How it leaves the server (never slows the chat)</h3>
+  <div class="pipe">
+    <div class="stage" style="--c: var(--q)">
+      <h3>1. Queue</h3>
+      <ul><li>During the chat request: <code>EmailAlerts</code> keeps the email in memory (one per chat)</li><li>Hooks <code>shutdown</code> (priority 100)</li></ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--ctx)">
+      <h3>2. Reply first</h3>
+      <ul><li>WordPress sends the reply</li><li><code>fastcgi_finish_request()</code> (PHP-FPM) or <code>litespeed_finish_request()</code> closes the connection</li></ul>
+    </div>
+    <div class="arrowh">→</div>
+    <div class="stage" style="--c: var(--good)">
+      <h3>3. Send</h3>
+      <ul><li><code>wp_mail()</code> in the same request: <b>arrives right away</b></li></ul>
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <tr><th>Server</th><th>How</th><th>Email arrives</th></tr>
+      <tr><td>PHP-FPM / LiteSpeed (most hosts)</td><td>Close connection, then <code>wp_mail()</code></td><td>Immediately</td></tr>
+      <tr><td>Apache mod_php (no finish function)</td><td><code>wp_schedule_single_event()</code> + <code>spawn_cron()</code>: background request to the site</td><td>A few seconds later</td></tr>
+      <tr><td>Same, with <code>DISABLE_WP_CRON</code> + server cron</td><td>Next cron run</td><td>1–5 min (card shows a warning)</td></tr>
+      <tr><td>Loopback blocked + no traffic</td><td>Next page visit runs WP-Cron</td><td>Late; never lost</td></tr>
+    </table>
+  </div>
+  <p style="margin-top:12px"><b>Email content</b> (plain text): subject <code>[Site] A visitor asks for a person</code> / <code>[Site] New chat: "…"</code>; the visitor's message, up to 6 earlier messages, page, visitor (name + email if logged in), time, "Answer in Live chat: …/wp-admin/admin.php?page=mnaisp#/live/&lt;id&gt;". Privacy text mentions the emails.</p>
 
   <h2 id="data"><span class="n">6</span>Data &amp; log</h2>
   <p>No schema change: requests are <code>event</code> rows, like joined / handed back.</p>
@@ -314,6 +392,9 @@
       <tr><td><code>includes/Conversations/ConversationLogger.php</code></td><td><code>finish_reply()</code>; handoff status.</td></tr>
       <tr><td><code>assets/src/pages/LiveChat.tsx</code></td><td>Badge, sort, banner, <code>LiveChatSettingsCard</code>.</td></tr>
       <tr><td><code>assets/src/widget/useChat.ts</code>, <code>live.ts</code></td><td>New events; expiry note as an answer bubble (links render).</td></tr>
+      <tr><td><code>includes/Conversations/EmailAlerts.php</code></td><td>New. Triggers, limits, email text, queue → shutdown / WP-Cron (<code>CRON_HOOK</code>), test email, <code>delivery()</code>.</td></tr>
+      <tr><td><code>assets/src/shared/notify.ts</code></td><td>New. Browser notifications: permission, per-browser choice, "not watching" check.</td></tr>
+      <tr><td><code>includes/Support/ViteAssets.php</code></td><td>Built entry without <code>?ver</code> (app ran twice).</td></tr>
       <tr><td><code>assets/src/components/MessageRow.tsx</code>, <code>PromptCard.tsx</code></td><td>Labels; warning when a custom prompt lacks <code>[[HANDOFF]]</code>.</td></tr>
     </table>
   </div>
@@ -322,7 +403,8 @@
   <ul>
     <li><b>Phrases are English.</b> Other languages rely on the AI marker, which needs the question to pass the search gate.</li>
     <li><b>Custom prompts</b> (e.g. the live Cooner site) need the <code>[[HANDOFF]]</code> rule pasted in; the Prompt screen warns.</li>
-    <li><b>No alerts</b> when nobody has the tab open (D6). The visitor is told honestly and gets the contact details.</li>
+    <li><b>Alerts:</b> browser notifications (tab open) and email (no one online) are in. Slack / Telegram / SMS: later, with Smart Sales Alerts (D6).</li>
+    <li><b>Local testing of emails</b> needs an SMTP plugin or a mail catcher (MailHog / Mailpit).</li>
     <li><b>Next ideas:</b> a "Talk to a person" button in the widget (D2/D3), tab-title count + sound for new requests, office hours.</li>
   </ul>
 </main>
