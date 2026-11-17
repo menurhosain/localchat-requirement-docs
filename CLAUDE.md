@@ -130,6 +130,13 @@ Claude's role: research assistant.
   Q6 answered: analytics ON by default for new installs and existing sites.
   Q7 answered: settings = AnalyticsSettingsCard on Settings tab (after WidgetSettingsCard).
   Q8 answered: normal REST endpoint. ALL plan questions answered; plan status reviewed. Next = A0 (schema v5).
+- 2026-11-17: ANALYTICS BUILT on master (not merged into WWC): A0 5632580 (schema v5: analytics_visits/pages/daily +
+  conversations.visit_id, AnalyticsSettingsService, AnalyticsRepository), A1 0d55a7b (AnalyticsTracker, POST /analytics/track
+  public form-encoded, hooks /chat/ask + request_person + reply, ChatConfig.analytics {enabled, tzOffset}), A2 f4c3ad1
+  (widget/analytics.ts in loader: localStorage vid rotated by site day from tzOffset, view once/page/day, open once/page/day,
+  fetch keepalive + sendBeacon; useActiveTime 60 s idle, flush 2 min/close/hide), A3 8d96a82 (AnalyticsMaintenance cron
+  mnaisp_analytics_daily: rollup + batched purge), A4 b488340 (AnalyticsReport, GET report/pages, GET/POST settings, Analytics tab
+  with own SVG chart, AnalyticsSettingsCard on Settings), A5 privacy text + docs. Deviations: plan section 13. docs.html Tables 5–7.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.

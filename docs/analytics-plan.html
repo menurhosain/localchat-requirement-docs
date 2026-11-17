@@ -118,7 +118,7 @@
 <body>
 <main>
   <h1>Chatbot Analytics: Implementation Plan</h1>
-  <p class="meta">Reviewed 17 Nov 2026, ready for A0. Requirements: <code>docs/analytics-requirements.html</code>. Same content as <code>docs/analytics-plan.md</code>.</p>
+  <p class="meta">Reviewed and built 17 Nov 2026 (deviations: section 13). Requirements: <code>docs/analytics-requirements.html</code>. Same content as <code>docs/analytics-plan.md</code>.</p>
   <p class="lead">How the analytics gets built: what the browser sends, what the server counts, where the numbers are stored, how old data is cleaned up, and what the new Analytics tab shows.</p>
 
   <nav class="toc">
@@ -134,6 +134,7 @@
     <a href="#privacy">Privacy</a>
     <a href="#milestones">Milestones</a>
     <a href="#questions">Decisions</a>
+    <a href="#built">Built</a>
   </nav>
 
   <!-- 1 -->
@@ -526,6 +527,25 @@ loop:
       <li><b>Settings place. <span class="tag good">Answered</span></b>Settings tab: own card <code>AnalyticsSettingsCard</code> after the widget card, with its own Save. The Analytics tab links to it when analytics is off.</li>
       <li><b>Endpoint cost. <span class="tag good">Answered</span></b>Normal REST endpoint. A lighter endpoint only later, if a big site needs it.</li>
     </ol>
+  </div>
+  <h2 id="built"><span class="n">13</span>Built: deviations from the plan</h2>
+  <p class="meta">17 Nov 2026 · commits A0 <code>5632580</code>, A1 <code>0d55a7b</code>, A2 <code>f4c3ad1</code>, A3 <code>8d96a82</code>, A4 <code>b488340</code>, A5 privacy text.</p>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th style="width:24%">What</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td><b>Visitor ID rotation</b></td><td>The browser computes the site day itself from <code>analytics.tzOffset</code> (site time zone offset, in the widget config) and makes a new ID before sending on a new day. The server's <code>{day}</code> only corrects the stored day (same ID), so one day never mixes two IDs.</td></tr>
+        <tr><td><b>Track request body</b></td><td>Form-encoded (<code>events[0][t]=…</code>), not JSON: <code>sendBeacon</code> can't send a JSON content type reliably. Same body for <code>fetch keepalive</code>.</td></tr>
+        <tr><td><b>Track response <code>off</code></b></td><td>Also for bots and excluded team members (not only analytics off): the browser stops sending from that page.</td></tr>
+        <tr><td><b>Asked vs talked</b></td><td>The funnel shows "Asked for a person: N · talked to a person: M" without a "not answered" number: a team member can also reply in chats where nobody asked, so asked − talked would be wrong.</td></tr>
+        <tr><td><b>Time counts for openers only</b></td><td>Seconds of visitors without an open are left out of totals and averages.</td></tr>
+        <tr><td><b>Shortcode time</b></td><td>Counted only after the visitor's first interaction with the inline chat (being on screen alone is not using the chat).</td></tr>
+        <tr><td><b>Open records the view</b></td><td>An open also marks the page as reported, so no separate view is sent for it.</td></tr>
+        <tr><td><b>Columns</b></td><td><code>time_buckets</code> and <code>devices</code> are TEXT (not VARCHAR(255)) so big sites never cut the JSON. Device '' is stored as <code>unknown</code> in <code>devices</code>.</td></tr>
+        <tr><td><b>Tab place</b></td><td>Analytics tab sits after Live chat.</td></tr>
+        <tr><td><b>Not tested</b></td><td>The purge time budget + follow-up event path (needs a backlog that takes over 20 s); batches and the loop were tested with 24,000 rows.</td></tr>
+      </tbody>
+    </table>
   </div>
 </main>
 </body>

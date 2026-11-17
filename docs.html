@@ -323,6 +323,7 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
         <tr><td><code>taken_over_at</code></td><td class="col-type">DATETIME, can be empty</td><td>When the current takeover started. Empty while the AI is in charge.</td><td class="example">2026-11-12 10:12</td></tr>
         <tr><td><code>visitor_seen_at</code></td><td class="col-type">DATETIME, can be empty</td><td>Last time the visitor's chat checked in (every poll, at most one write per 20 seconds). Drives the "online" dot and the Live chat list.</td><td class="example">2026-11-12 10:14</td></tr>
         <tr><td><code>agent_seen_at</code></td><td class="col-type">DATETIME, can be empty</td><td>Last time the agent in charge had the dashboard open. Silent for 10 minutes = chat goes back to the AI automatically.</td><td class="example">2026-11-12 10:14</td></tr>
+        <tr><td><code>visit_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The analytics visit (Table 5) that last wrote in this chat. A request for a person and a team reply mark "asked" / "talked" on that visit. Added in v5.</td><td class="example">841</td></tr>
         <tr><td><code>started_at</code> / <code>last_message_at</code></td><td class="col-type">DATETIME</td><td>First and latest message (visitor or team member). Retention counts from the latest one.</td><td class="example">2026-11-04 08:44</td></tr>
       </tbody>
     </table>
@@ -349,6 +350,61 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
         <tr><td><code>sources</code></td><td class="col-type">LONGTEXT (JSON)</td><td>Cited sources, every chunk the search found with its scores, and what was sent to the AI. Shows why a question failed.</td><td class="example">{"cited":[…],"found":[…]}</td></tr>
         <tr><td><code>model</code>, <code>prompt_tokens</code>, <code>completion_tokens</code>, <code>ms</code></td><td class="col-type">VARCHAR / INT</td><td>Which AI answered, how many tokens it used, and how long it took.</td><td class="example">gpt-4o-mini, 1840, 96, 2300</td></tr>
         <tr><td><code>error_message</code></td><td class="col-type">TEXT, can be empty</td><td>What went wrong, for <code>error</code> rows.</td><td class="example">HTTP 429…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Table 5: <code>wp_mnaisp_analytics_visits</code></h2>
+  <p>One row per visitor per site day (added in schema v5, Analytics tab). The visitor is an anonymous random ID the browser
+    makes and replaces every day: no name, no IP address, no message text. Deleted after the analytics retention (default
+    90 days, 0 = keep); the daily totals (Table 7) stay.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>day</code> + <code>vid</code></td><td class="col-type">DATE + CHAR(22), unique together</td><td>The site day (site time zone) and the browser's ID for that day. One browser = one row per day, however many pages.</td><td class="example">2026-11-17, Xq3fP0…</td></tr>
+        <tr><td><code>device</code></td><td class="col-type">VARCHAR(10)</td><td>desktop, mobile or tablet (for a later device split).</td><td class="example">mobile</td></tr>
+        <tr><td><code>opened_at</code> / <code>first_open_page</code></td><td class="col-type">DATETIME / BIGINT, can be empty</td><td>When and on which page (Table 6 row) the visitor first opened the chat that day.</td><td class="example">10:14, 3112</td></tr>
+        <tr><td><code>first_msg_page</code></td><td class="col-type">BIGINT, can be empty</td><td>Page (Table 6 row) of the first message of the day; started / asked / talked count for that page in the per-page funnel.</td><td class="example">3115</td></tr>
+        <tr><td><code>started</code>, <code>asked</code>, <code>talked</code></td><td class="col-type">TINYINT 0/1</td><td>Sent a message; asked for a person; a team member replied.</td><td class="example">1, 0, 0</td></tr>
+        <tr><td><code>active_seconds</code></td><td class="col-type">INT</td><td>Time on chatbot: chat open, tab visible, activity in the last 60 s. Max one day.</td><td class="example">165</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Table 6: <code>wp_mnaisp_analytics_pages</code></h2>
+  <p>One row per visitor per page per day: which pages with the chat a visitor saw, and where they opened it. Same retention as Table 5.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>visit_id</code> + <code>page_key</code></td><td class="col-type">BIGINT + CHAR(16), unique together</td><td>The visit, and the page (first 16 characters of sha1 of the path).</td><td class="example">841, 9f2c…</td></tr>
+        <tr><td><code>day</code></td><td class="col-type">DATE</td><td>Copy of the visit's day, for fast range queries.</td><td class="example">2026-11-17</td></tr>
+        <tr><td><code>path</code> / <code>title</code></td><td class="col-type">VARCHAR(500) / VARCHAR(200)</td><td>Path without domain, query or #, and the page title.</td><td class="example">/pricing/, Pricing</td></tr>
+        <tr><td><code>opened</code></td><td class="col-type">TINYINT 0/1</td><td>The visitor opened the chat on this page.</td><td class="example">1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Table 7: <code>wp_mnaisp_analytics_daily</code></h2>
+  <p>Totals per day, built by the daily cron from Tables 5 and 6 and kept forever. <code>page_key</code> '' = whole site, else one row per page.
+    The Analytics tab reads these for finished days and computes today from Tables 5 and 6.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>day</code> + <code>page_key</code></td><td class="col-type">DATE + CHAR(16), primary key</td><td>Which day, and which page ('' = whole site).</td><td class="example">2026-11-16, ''</td></tr>
+        <tr><td><code>visitors</code>, <code>opened</code>, <code>first_opens</code></td><td class="col-type">INT</td><td>Unique visitors; opened the chat (page row: on this page); first opens of the day on this page.</td><td class="example">140, 25, 0</td></tr>
+        <tr><td><code>started</code>, <code>asked</code>, <code>talked</code></td><td class="col-type">INT</td><td>Funnel steps (page row: visitors whose first message of the day was on this page).</td><td class="example">17, 3, 2</td></tr>
+        <tr><td><code>seconds_*</code>, <code>openers_*</code></td><td class="col-type">BIGINT / INT</td><td>Time on chatbot and visitors who opened, total and split AI only / with a person (site row).</td><td class="example">4120, 23, 2</td></tr>
+        <tr><td><code>time_buckets</code></td><td class="col-type">TEXT (JSON)</td><td>Visitors per time range (&lt;10 s, 10–30 s, … 1 h+), for the approximate median.</td><td class="example">{"all":[3,5,…]}</td></tr>
+        <tr><td><code>devices</code></td><td class="col-type">TEXT (JSON)</td><td>Per device: visitors, opened, started, talked (site row).</td><td class="example">{"mobile":[60,9,6,1]}</td></tr>
       </tbody>
     </table>
   </div>

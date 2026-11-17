@@ -12,7 +12,7 @@
 > **Not in this plan:** P1 extras (previous-period compare, device split screen, CSV export, separate per-page screen,
 > links into Conversations, answered / "I don't know" rates). The schema leaves room for them.
 
-Created: 2026-11-17 · Status: **reviewed, ready for A0** (all questions answered 2026-11-17, section 12)
+Created: 2026-11-17 · Status: **built 2026-11-17 (A0–A5), see section 13** (all questions answered 2026-11-17, section 12)
 
 ---
 
@@ -384,3 +384,18 @@ Tests: none new (user's call: tests later). Checks by WP-CLI scripts + throwaway
 8. ~~**Endpoint cost**~~ ANSWERED 2026-11-17: normal REST endpoint; lighter endpoint only later if a big site needs it.
 
 All review questions answered 2026-11-17. Next = A0.
+
+## 13. Built (2026-11-17): deviations from the plan
+
+Commits: A0 5632580, A1 0d55a7b, A2 f4c3ad1, A3 8d96a82, A4 b488340, A5 (privacy text).
+
+- **Visitor ID rotation:** The browser computes the site day itself from `analytics.tzOffset` (site time zone offset, in the widget config) and makes a new ID before sending on a new day. The server's `{day}` only corrects the stored day (same ID), so one day never mixes two IDs.
+- **Track request body:** Form-encoded (`events[0][t]=…`), not JSON: `sendBeacon` can't send a JSON content type reliably. Same body for `fetch keepalive`.
+- **Track response `off`:** Also for bots and excluded team members (not only analytics off): the browser stops sending from that page.
+- **Asked vs talked:** The funnel shows "Asked for a person: N · talked to a person: M" without a "not answered" number: a team member can also reply in chats where nobody asked, so asked − talked would be wrong.
+- **Time counts for openers only:** Seconds of visitors without an open are left out of totals and averages.
+- **Shortcode time:** Counted only after the visitor's first interaction with the inline chat (being on screen alone is not using the chat).
+- **Open records the view:** An open also marks the page as reported, so no separate view is sent for it.
+- **Columns:** `time_buckets` and `devices` are TEXT (not VARCHAR(255)) so big sites never cut the JSON. Device '' is stored as `unknown` in `devices`.
+- **Tab place:** Analytics tab sits after Live chat.
+- **Not tested:** The purge time budget + follow-up event path (needs a backlog that takes over 20 s); batches and the loop were tested with 24,000 rows.
