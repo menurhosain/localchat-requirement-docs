@@ -104,6 +104,19 @@ Claude's role: research assistant.
 - 2026-11-16: HTML email template b359b2a: EmailTemplate (white card, widget accent colour, quote, transcript, details,
   button, table + inline styles), plain text as AltBody. Alert now structured (intro/message/transcript/details/note/
   url); text_lines() for text-only channels. Pushed master + research repo.
+- 2026-11-17: NEW feature: CHATBOT ANALYTICS. Requirements written (no plan/architecture yet, user's call):
+  docs/analytics-requirements.md + .html. Funnel unique visitors on widget pages > opened > started > talked to a person
+  (+ asked for a person), time on chatbot (panel open + tab visible + not idle), first-open page. 11 open questions
+  (all answered 2026-11-17, below).
+  User's call: unique visitor PER DAY (same browser 2 days = 2), range = sum of days, first-open page = first open of the day.
+  Consent: count anyway, no waiting for cookie consent (anonymous one-day ID); analytics switch = owner's opt-out.
+  Shortcode chat = opened on first click or typing inside it (not on scroll into view).
+  Idle limit 60 s: activity (typing, click, scroll, mouse/touch in chat, new message arriving) restarts countdown.
+  Talked to a person = team member sent ≥ 1 reply (take-over without reply not counted).
+  Team members (edit_others_posts) excluded by default, setting can include.
+  Retention: detail rows 90 days default, setting days or OFF (keep forever); daily totals forever; daily WP-Cron purge in batches.
+  All analytics FREE. Recording off = analytics keeps counting, person steps show 0, no note.
+  DNT/GPC ignored, count everyone. ALL questions answered. Next = architecture + plan.
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -276,4 +289,5 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/live-takeover-flow.html` — visual flow of a takeover chat (swimlanes, message decision, modes, polling, DB rows, edge cases); update with the plan
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
+- `docs/analytics-requirements.md` / `.html` — chatbot analytics requirements (funnel, time on chatbot, first-open page, privacy, open questions); plan comes later
 - `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), alert channel pattern, code map; update when HandoffDetector / request_person / presence times change

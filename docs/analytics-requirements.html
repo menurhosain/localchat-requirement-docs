@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatbot Analytics</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --text: #1f2328; --muted: #5b616b; --border: #e3e1da; --line: #cfccc2;
+    --code-bg: #f0eee8; --q: #2b6cb0; --q-soft: #e6eff9; --ctx: #6b4fa3; --ctx-soft: #efeaf8;
+    --good: #2f6f5e; --good-soft: #e4f0ec; --warn: #9a5a12; --warn-soft: #fbf0e1; --bad: #a33b3b; --bad-soft: #f8e7e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+      --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+      --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+    --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+    --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 10px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.4rem; margin: 64px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 0.9rem; flex: none; }
+  h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  .lead { color: var(--muted); max-width: 760px; font-size: 1.05rem; }
+  .meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
+  code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  nav.toc a { color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface); padding: 5px 12px; border-radius: 999px; font-size: 0.9rem; }
+  nav.toc a:hover { border-color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-top: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
+  .grid2 .card, .grid3 .card { margin-top: 0; }
+  .callout { border-left: 4px solid var(--c); background: var(--s); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .callout b { color: var(--c); }
+  .good { --c: var(--good); --s: var(--good-soft); }
+  .warn { --c: var(--warn); --s: var(--warn-soft); }
+  .bad { --c: var(--bad); --s: var(--bad-soft); }
+  .q { --c: var(--q); --s: var(--q-soft); }
+  .ctx { --c: var(--ctx); --s: var(--ctx-soft); }
+
+  /* funnel */
+  .funnel { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .step { display: grid; grid-template-columns: 220px 1fr 150px; gap: 14px; align-items: center; }
+  .step .label { font-weight: 600; font-size: 0.95rem; }
+  .step .label small { display: block; font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+  .bar { height: 34px; border-radius: 8px; background: var(--code-bg); position: relative; overflow: hidden; }
+  .bar span { position: absolute; inset: 0 auto 0 0; background: var(--c); border-radius: 8px; }
+  .step .num { font-variant-numeric: tabular-nums; text-align: right; font-size: 0.92rem; }
+  .step .num b { font-size: 1.05rem; }
+  .step .num small { display: block; color: var(--muted); font-size: 0.78rem; }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+
+  .tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--s); color: var(--c); margin-right: 4px; }
+  .stat { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat small { font-size: 0.85rem; font-weight: 400; color: var(--muted); display: block; margin-top: 4px; }
+
+  /* time diagram */
+  .timeline { display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin: 10px 0 6px; border: 1px solid var(--border); }
+  .timeline div { display: grid; place-items: center; font-size: 0.75rem; color: var(--text); }
+  .t-on { background: var(--good-soft); border-right: 1px solid var(--border); }
+  .t-off { background: repeating-linear-gradient(45deg, var(--code-bg), var(--code-bg) 6px, var(--surface) 6px, var(--surface) 12px); color: var(--muted) !important; border-right: 1px solid var(--border); }
+  .legend { font-size: 0.82rem; color: var(--muted); }
+
+  ol.qs li { margin-bottom: 10px; }
+  ol.qs li b { display: block; }
+
+  @media (max-width: 760px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .step { grid-template-columns: 1fr; gap: 4px; }
+    .step .num { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chatbot Analytics: Requirements</h1>
+  <p class="meta">Requirements only, 17 Nov 2026. How it will be built is planned later. Source: <code>docs/analytics-requirements.md</code></p>
+  <p class="lead">Show the site owner how visitors use the chatbot: how many people see it, open it, start a chat and end up talking to a person, how long they stay, and on which page they first opened it.</p>
+
+  <nav class="toc">
+    <a href="#scope">Scope</a>
+    <a href="#funnel">Funnel</a>
+    <a href="#defs">Definitions</a>
+    <a href="#time">Time on chatbot</a>
+    <a href="#pages">First-open pages</a>
+    <a href="#later">Later (P1)</a>
+    <a href="#exclude">Excluded</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#quality">Quality</a>
+    <a href="#questions">Decisions</a>
+    <a href="#out">Not in scope</a>
+  </nav>
+
+  <h2 id="scope"><span class="n">1</span>Which pages count</h2>
+  <div class="grid2">
+    <div class="callout good"><b>Counted</b><br>Pages where the chatbot widget loads: the floating button or the <code>[mnaisp_chat]</code> shortcode. The tracking code lives inside the widget loader.</div>
+    <div class="callout bad"><b>Not counted</b><br>Pages without the widget. This is not a general site analytics tool. Admin preview and Playground never count.</div>
+  </div>
+  <div class="callout warn"><b>Page cache</b><br>Many sites serve cached HTML (WP Rocket, LiteSpeed, Cloudflare). PHP does not run for those visits, so counting must happen in the visitor's browser.</div>
+
+  <h2 id="funnel"><span class="n">2</span>The funnel (P0)</h2>
+  <p>All steps are counted <b>per day</b>: how many came today, opened the chat, started a conversation, talked to a person. A range (e.g. last 7 days) adds up the days. Each step shows its count, % of the step before, and % of all visitors. Example numbers:</p>
+  <div class="card">
+    <div class="funnel">
+      <div class="step q">
+        <div class="label">Unique visitors<small>on pages with the chatbot</small></div>
+        <div class="bar"><span style="width:100%"></span></div>
+        <div class="num"><b>1,000</b><small>100%</small></div>
+      </div>
+      <div class="step ctx">
+        <div class="label">Opened chatbot<small>clicked the button</small></div>
+        <div class="bar"><span style="width:18%"></span></div>
+        <div class="num"><b>180</b><small>18% of visitors</small></div>
+      </div>
+      <div class="step good">
+        <div class="label">Started conversation<small>sent at least 1 message</small></div>
+        <div class="bar"><span style="width:12%"></span></div>
+        <div class="num"><b>120</b><small>67% of opened · 12% of all</small></div>
+      </div>
+      <div class="step warn">
+        <div class="label">Talked to a person<small>a team member replied</small></div>
+        <div class="bar"><span style="width:1.5%"></span></div>
+        <div class="num"><b>15</b><small>13% of started · 1.5% of all</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout bad"><b>Missed requests.</b> "Asked for a person" is shown beside "Talked to a person". Example: 22 asked, 15 talked to a person, so 7 requests were missed.</div>
+  <p>Date range: Today, Last 7 / 30 / 90 days, or custom. Site time zone. A daily trend chart shows each funnel step over the range.</p>
+
+  <h2 id="defs"><span class="n">3</span>Definitions</h2>
+  <p>Each number needs one exact meaning, so the numbers never contradict each other.</p>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><b>Unique visitor</b></td><td>One browser on one device, counted once <b>per day</b> however many pages it visits (5 pages = 1 visitor). The same browser on another day counts again (Monday + Tuesday = 2). A range total is the sum of the daily counts. Anonymous: no name, no IP, no fingerprinting. Page views are not counted.</td></tr>
+        <tr><td><b>Opened chatbot</b></td><td>The visitor opened the panel themselves (button or launcher label). Automatic re-open, e.g. a reload during a live chat, is not a new open. Shortcode chat (always visible): first click or typing inside it.</td></tr>
+        <tr><td><b>Started conversation</b></td><td>Sent at least one message: typed question, suggested-question click, or message to the team.</td></tr>
+        <tr><td><b>Asked for a person</b></td><td>The chat has a human-request event (<code>requested</code> / <code>requested_offline</code>).</td></tr>
+        <tr><td><b>Talked to a person</b></td><td>A team member sent at least one reply in that chat. Take-over without a reply does not count.</td></tr>
+        <tr><td><b>Time on chatbot</b></td><td>Time the panel was open <i>and</i> the tab visible <i>and</i> the visitor not idle (60 s without activity).</td></tr>
+        <tr><td><b>First-open page</b></td><td>The page URL where the visitor opened the chatbot for the first time <b>that day</b>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="time"><span class="n">4</span>Time on chatbot (P0)</h2>
+  <p>Only time spent with the chat open and the visitor present counts:</p>
+  <div class="card">
+    <div class="timeline">
+      <div class="t-on" style="flex:3">open · 1 m 40 s</div>
+      <div class="t-off" style="flex:2">tab hidden</div>
+      <div class="t-on" style="flex:2">open · 1 m 10 s</div>
+      <div class="t-off" style="flex:1.5">idle</div>
+      <div class="t-off" style="flex:2">panel closed</div>
+      <div class="t-on" style="flex:1">40 s</div>
+    </div>
+    <p class="legend">Green = counted (3 m 30 s in total). Striped = not counted.</p>
+  </div>
+  <div class="callout q"><b>Idle rule: 60 s.</b> Every activity restarts a 60 s countdown. When it runs out, time stops until the next activity. Activity = typing, clicking in the chat (send, suggestion, link, button), scrolling the messages, mouse move or touch inside the chat, or a new message arriving (AI answer or team reply, the visitor is probably reading it).</div>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Time</th><th>What happens</th><th>Counted?</th></tr></thead>
+      <tbody>
+        <tr><td>0:00</td><td>Opens chat, types question</td><td><span class="tag good">yes</span></td></tr>
+        <tr><td>0:20</td><td>AI answer arrives (countdown restarts)</td><td><span class="tag good">yes</span></td></tr>
+        <tr><td>1:20</td><td>Nothing for 60 s</td><td><span class="tag bad">stops</span></td></tr>
+        <tr><td>1:20 – 41:00</td><td>Away, tab still open</td><td><span class="tag bad">no</span></td></tr>
+        <tr><td>41:00</td><td>Comes back, types</td><td><span class="tag good">yes</span></td></tr>
+        <tr><td>41:30</td><td>Closes panel</td><td><span class="tag bad">stops</span></td></tr>
+      </tbody>
+    </table>
+    <p class="legend" style="margin-top:8px">Counted: 1 m 20 s + 30 s = <b>1 m 50 s</b>, not 41 m 30 s.</p>
+  </div>
+  <div class="grid3">
+    <div class="card"><div class="stat">2 m 45 s<small>average per visitor per day (who opened)</small></div></div>
+    <div class="card"><div class="stat">1 m 20 s<small>median per visitor per day (who opened)</small></div></div>
+    <div class="card"><div class="stat">8 h 15 m<small>total in the range</small></div></div>
+  </div>
+  <p style="margin-top:14px">Also split: AI-only chats vs chats that talked to a person.</p>
+
+  <h2 id="pages"><span class="n">5</span>First-open pages (P0)</h2>
+  <p>Where do visitors open the chatbot for the first time each day? Each page also shows its own open rate, so pages where the chatbot is seen but ignored stand out.</p>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Page</th><th class="r">First opens</th><th class="r">% of first opens</th><th class="r">Visitors on page</th><th class="r">Open rate</th></tr></thead>
+      <tbody>
+        <tr><td>Pricing<br><small style="color:var(--muted)">/pricing/</small></td><td class="r">62</td><td class="r">34%</td><td class="r">240</td><td class="r">26%</td></tr>
+        <tr><td>Home<br><small style="color:var(--muted)">/</small></td><td class="r">48</td><td class="r">27%</td><td class="r">610</td><td class="r">8%</td></tr>
+        <tr><td>Shipping &amp; returns<br><small style="color:var(--muted)">/shipping/</small></td><td class="r">31</td><td class="r">17%</td><td class="r">95</td><td class="r">33%</td></tr>
+        <tr><td>Contact<br><small style="color:var(--muted)">/contact/</small></td><td class="r">20</td><td class="r">11%</td><td class="r">130</td><td class="r">15%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul style="margin-top:12px">
+    <li>Sorted by first opens, top 20, with "show all".</li>
+    <li>Clicking a page shows the funnel for that page only.</li>
+    <li>URLs stored without query strings by default (privacy).</li>
+  </ul>
+
+  <h2 id="later"><span class="n">6</span>Nice to have (P1, later)</h2>
+  <div class="grid2">
+    <div class="card"><ul>
+      <li>Compare with the previous period (+12% opens)</li>
+      <li>Device split: desktop / mobile / tablet</li>
+      <li>CSV export</li>
+    </ul></div>
+    <div class="card"><ul>
+      <li>Separate per-page funnel screen</li>
+      <li>Click a number to see those chats in Conversations</li>
+      <li>Answered vs "I don't know" rate, top unanswered questions (E3)</li>
+    </ul></div>
+  </div>
+
+  <h2 id="exclude"><span class="n">7</span>Who is excluded</h2>
+  <ul>
+    <li>Logged-in team members who can use Live chat (<code>edit_others_posts</code>). Not counted by default; a setting can include them.</li>
+    <li>Admin Style preview and Playground.</li>
+    <li>Known bots and crawlers.</li>
+    <li><i>Not excluded:</i> Do Not Track / Global Privacy Control visitors. Both signals are ignored; everyone is counted.</li>
+  </ul>
+
+  <h2 id="privacy"><span class="n">8</span>Privacy</h2>
+  <div class="grid2">
+    <div class="card"><h3>Never stored</h3><ul>
+      <li>IP address (same rule as the conversation log)</li>
+      <li>Message text: analytics stores only that something happened</li>
+      <li>Query strings in URLs (may hold emails, tokens, order IDs)</li>
+    </ul></div>
+    <div class="card"><h3>Controls</h3><ul>
+      <li>Anonymous random visitor ID only</li>
+      <li>Own on/off switch, separate from recording</li>
+      <li>Detail rows: 90 days by default, days changeable or deletion off</li>
+      <li>Daily totals kept forever</li>
+      <li>Daily WP-Cron cleanup in batches, like conversations</li>
+      <li>Privacy-policy text, like the conversation log</li>
+      <li>Counts without waiting for cookie consent (anonymous one-day ID)</li>
+    </ul></div>
+  </div>
+
+  <h2 id="quality"><span class="n">9</span>Quality requirements</h2>
+  <ul>
+    <li><b>No slowdown.</b> Tracking never blocks page load or the chat. Small requests, batched or sent with <code>sendBeacon</code> when the page closes.</li>
+    <li><b>Silent failure.</b> A tracking error never breaks the widget.</li>
+    <li><b>Bounded DB growth.</b> On busy sites, old detail rows are rolled up into daily totals.</li>
+    <li><b>Consistent numbers.</b> Each funnel step is never bigger than the step before it.</li>
+    <li><b>Fast screen.</b> 90 days on a busy site loads in under 1 s.</li>
+    <li><b>Access.</b> Admins only. Editors keep seeing only Live chat.</li>
+    <li><b>WWC branch.</b> Works there too; only the plugin name differs.</li>
+  </ul>
+
+  <h2 id="questions"><span class="n">10</span>Decisions (all answered 17 Nov 2026)</h2>
+  <div class="card">
+    <ol class="qs">
+      <li><b>Unique visitor across days. <span class="tag good">Answered</span></b>Unique <b>per day</b>. Same browser Monday and Tuesday = 2. Range totals = sum of days. A daily anonymous ID is enough.</li>
+      <li><b>Consent. <span class="tag good">Answered</span></b>Count anyway, no waiting for cookie consent: the ID is anonymous and lasts one day. Owners who need consent can turn analytics off.</li>
+      <li><b>Shortcode chat. <span class="tag good">Answered</span></b>Counts as opened on the first click or typing inside it. Scrolling into view does not count.</li>
+      <li><b>First-open page. <span class="tag good">Answered</span></b>First open of the day (follows from question 1).</li>
+      <li><b>Idle time. <span class="tag good">Answered</span></b>60 s without activity (see section 4).</li>
+      <li><b>Talked to a person. <span class="tag good">Answered</span></b>Only when a team member sent at least one reply. Take-over without a reply does not count.</li>
+      <li><b>Team members. <span class="tag good">Answered</span></b>Excluded (not counted) by default; a setting can include them.</li>
+      <li><b>Retention. <span class="tag good">Answered</span></b>Detail rows deleted after 90 days by default; setting to change the days or turn deletion off (small sites can keep everything). Daily totals kept forever. Deletion = daily WP-Cron job, like conversations.</li>
+      <li><b>Free vs Pro. <span class="tag good">Answered</span></b>All analytics is Free, including the P1 extras.</li>
+      <li><b>Recording off. <span class="tag good">Answered</span></b>Analytics keeps counting (own switch). "Asked for a person" and "Talked to a person" simply show 0, no extra note.</li>
+      <li><b>Do Not Track / GPC. <span class="tag good">Answered</span></b>Ignore both, count everyone.</li>
+    </ol>
+  </div>
+
+  <h2 id="out"><span class="n">11</span>Not in scope</h2>
+  <ul>
+    <li>General web analytics: referrers, countries, bounce rate, pages without the widget.</li>
+    <li>Sending events to Google Analytics / GA4 (possible later as an option).</li>
+    <li>Per-visitor timelines or session recordings.</li>
+    <li>A/B tests of widget texts.</li>
+  </ul>
+</main>
+</body>
+</html>
