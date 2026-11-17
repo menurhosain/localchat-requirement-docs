@@ -201,7 +201,7 @@
   <p>Where do visitors open the chatbot for the first time each day? Each page also shows its own open rate, so pages where the chatbot is seen but ignored stand out.</p>
   <div class="card tablewrap">
     <table>
-      <thead><tr><th>Page</th><th class="r">First opens</th><th class="r">% of first opens</th><th class="r">Visitors on page</th><th class="r">Open rate</th></tr></thead>
+      <thead><tr><th>Page</th><th class="r">First opens</th><th class="r">Share of first opens</th><th class="r">Visitors on page</th><th class="r">Open rate</th></tr></thead>
       <tbody>
         <tr><td>Pricing<br><small style="color:var(--muted)">/pricing/</small></td><td class="r">62</td><td class="r">34%</td><td class="r">240</td><td class="r">26%</td></tr>
         <tr><td>Home<br><small style="color:var(--muted)">/</small></td><td class="r">48</td><td class="r">27%</td><td class="r">610</td><td class="r">8%</td></tr>
@@ -211,8 +211,10 @@
     </table>
   </div>
   <ul style="margin-top:12px">
+    <li><b>Share of first opens</b> = this page's first opens ÷ all first opens in the range (62 ÷ 180 = 34%): where chatbot use starts.</li>
+    <li><b>Open rate</b> = opens on this page ÷ unique visitors on this page (62 ÷ 240 = 26%): how often visitors of this page open the chat.</li>
     <li>Sorted by first opens, top 20, with "show all".</li>
-    <li>Clicking a page shows the funnel for that page only.</li>
+    <li>Clicking a page shows the funnel for that page only: visitors on it → opened on it → started there (first message of the day sent on it) → asked / talked (credited to the same page). Each visitor who started counts on one page only.</li>
     <li>URLs stored without query strings by default (privacy).</li>
   </ul>
 

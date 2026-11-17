@@ -83,11 +83,14 @@ Counted: 1:20 + 0:30 = 1 min 50 s     (not 41 min 30 s)
 ### 4.3 First-open pages
 
 - Table: page (title + URL), number of visitors who opened the chatbot there first,
-  % of all first opens.
+  share of first opens (this page's first opens ÷ all first opens in the range, e.g. 62 ÷ 180 = 34%:
+  where chatbot use starts).
 - Also per page: unique visitors on that page, so the owner sees the open rate per page
-  (opens ÷ unique visitors on that page).
+  (opens ÷ unique visitors on that page, e.g. 62 ÷ 240 = 26%).
 - Sorted by first opens, top 20, with "show all".
-- Clicking a page shows its own funnel (visitors → opened → started → person).
+- Clicking a page shows its own funnel: unique visitors on that page → opened on that page → started on that page
+  (first message of the day sent there) → asked / talked to a person (credited to that same page). Each visitor who
+  started counts on one page only (user's call 2026-11-17).
 
 ### 4.4 Date range
 

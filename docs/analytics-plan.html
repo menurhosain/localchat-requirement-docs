@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics Plan</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --text: #1f2328; --muted: #5b616b; --border: #e3e1da; --line: #cfccc2;
+    --code-bg: #f0eee8; --q: #2b6cb0; --q-soft: #e6eff9; --ctx: #6b4fa3; --ctx-soft: #efeaf8;
+    --good: #2f6f5e; --good-soft: #e4f0ec; --warn: #9a5a12; --warn-soft: #fbf0e1; --bad: #a33b3b; --bad-soft: #f8e7e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+      --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+      --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+    --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+    --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 10px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.4rem; margin: 64px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 0.9rem; flex: none; }
+  h3 { font-size: 1.05rem; margin: 22px 0 8px; }
+  .card h3:first-child { margin-top: 0; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  .lead { color: var(--muted); max-width: 760px; font-size: 1.05rem; }
+  .meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
+  code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 0.84rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0 0 12px; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  nav.toc a { color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface); padding: 5px 12px; border-radius: 999px; font-size: 0.9rem; }
+  nav.toc a:hover { border-color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-top: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
+  .grid2 .card, .grid3 .card { margin-top: 0; }
+  .callout { border-left: 4px solid var(--c); background: var(--s); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .callout b { color: var(--c); }
+  .good { --c: var(--good); --s: var(--good-soft); }
+  .warn { --c: var(--warn); --s: var(--warn-soft); }
+  .bad { --c: var(--bad); --s: var(--bad-soft); }
+  .q { --c: var(--q); --s: var(--q-soft); }
+  .ctx { --c: var(--ctx); --s: var(--ctx-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tablewrap { overflow-x: auto; }
+  .tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--s); color: var(--c); margin-right: 4px; white-space: nowrap; }
+
+  /* swimlane flow */
+  .lanes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .lanes .head { padding: 10px 14px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c); background: var(--s); border-bottom: 1px solid var(--border); }
+  .lanes .cell { padding: 10px 14px; font-size: 0.86rem; border-bottom: 1px dashed var(--border); border-right: 1px solid var(--border); min-height: 46px; }
+  .lanes .cell:nth-child(3n) { border-right: 0; }
+  .lanes .cell.empty { background: repeating-linear-gradient(135deg, transparent, transparent 8px, var(--code-bg) 8px, var(--code-bg) 9px); opacity: 0.5; }
+  .lanes .step { font-size: 0.72rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .lanes .arrow { color: var(--muted); }
+
+  /* tables diagram */
+  .er { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 14px; }
+  .tbl { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--c); border-radius: 10px; overflow: hidden; }
+  .tbl h4 { margin: 0; padding: 10px 14px; font: 600 0.9rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--c); border-bottom: 1px solid var(--border); }
+  .tbl h4 small { display: block; font: 400 0.8rem system-ui, sans-serif; color: var(--muted); margin-top: 2px; }
+  .tbl ul { list-style: none; margin: 0; padding: 8px 14px 12px; font: 0.8rem/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tbl li { margin: 0; display: flex; justify-content: space-between; gap: 10px; }
+  .tbl li span { color: var(--muted); }
+  .tbl li.k { font-weight: 700; }
+  .tbl li.new { color: var(--good); font-weight: 700; }
+
+  /* mock admin */
+  .mock { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 14px; }
+  .mock .bar-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .mock .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mock .pill { border: 1px solid var(--border); border-radius: 8px; padding: 3px 10px; font-size: 0.82rem; }
+  .mock .pill.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .fun { display: grid; grid-template-columns: 170px 1fr 120px; gap: 10px; align-items: center; font-size: 0.86rem; margin-bottom: 6px; }
+  .fun .b { height: 22px; background: var(--code-bg); border-radius: 6px; position: relative; overflow: hidden; }
+  .fun .b span { position: absolute; inset: 0 auto 0 0; background: var(--c); border-radius: 6px; }
+  .fun .v { text-align: right; font-variant-numeric: tabular-nums; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  .tile { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .tile b { font-size: 1.3rem; display: block; }
+  .tile small { color: var(--muted); font-size: 0.78rem; }
+
+  /* milestones */
+  .ms { display: grid; grid-template-columns: 70px 1fr; gap: 0 14px; }
+  .ms .id { font-weight: 800; font-size: 1.1rem; color: var(--q); padding-top: 14px; }
+  .ms .body { border-left: 3px solid var(--line); padding: 12px 0 12px 16px; }
+  .ms .body p { margin: 0 0 4px; }
+  .ms .body small { color: var(--muted); }
+
+  ol.qs li { margin-bottom: 12px; }
+  ol.qs li b { display: block; }
+
+  @media (max-width: 760px) {
+    .grid2, .grid3, .er, .tiles { grid-template-columns: 1fr; }
+    .lanes { grid-template-columns: 1fr; }
+    .lanes .cell { border-right: 0; }
+    .lanes .cell.empty { display: none; }
+    .lanes .head:not(:first-child) { display: none; }
+    .fun { grid-template-columns: 1fr; gap: 2px; }
+    .fun .v { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chatbot Analytics: Implementation Plan</h1>
+  <p class="meta">Reviewed 17 Nov 2026, ready for A0. Requirements: <code>docs/analytics-requirements.html</code>. Same content as <code>docs/analytics-plan.md</code>.</p>
+  <p class="lead">How the analytics gets built: what the browser sends, what the server counts, where the numbers are stored, how old data is cleaned up, and what the new Analytics tab shows.</p>
+
+  <nav class="toc">
+    <a href="#summary">Summary</a>
+    <a href="#flow">Flow</a>
+    <a href="#vid">Visitor ID &amp; day</a>
+    <a href="#db">Database</a>
+    <a href="#server">Server</a>
+    <a href="#browser">Browser</a>
+    <a href="#cron">Rollup &amp; purge</a>
+    <a href="#reports">Reports</a>
+    <a href="#ui">Admin tab</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#milestones">Milestones</a>
+    <a href="#questions">Decisions</a>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="summary"><span class="n">1</span>Summary</h2>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th style="width:24%">Item</th><th>Decision (proposed)</th></tr></thead>
+      <tbody>
+        <tr><td><b>Where counting happens</b></td><td>In the <b>browser</b> (widget loader), so cached pages are counted too. The server counts what it already knows: started (a message reached <code>/chat/ask</code>), asked for a person, and team replied.</td></tr>
+        <tr><td><b>Visitor ID</b></td><td>Random 22-character ID in <b>localStorage</b>, replaced when the site day changes (the server says which day it is). No IP, no fingerprint, no user ID.</td></tr>
+        <tr><td><b>Per day</b></td><td>Day = <b>site time zone</b> (<code>wp_date('Y-m-d')</code>) when the server receives the event. Unique key <code>(day, visitor ID)</code>.</td></tr>
+        <tr><td><b>Storage</b></td><td>3 new tables: <code>analytics_visits</code> (one row per visitor per day), <code>analytics_pages</code> (one per visitor per page per day), <code>analytics_daily</code> (totals, kept forever).</td></tr>
+        <tr><td><b>Chat → visit link</b></td><td>New column <code>conversations.visit_id</code>. Person requests and team replies mark that visit.</td></tr>
+        <tr><td><b>Requests</b></td><td>New public <code>POST /analytics/track</code> with batched events. Each page is sent only the first time per day, and an open once per page per day. Time is sent on panel close, when the tab is hidden, and every 2 min. <code>sendBeacon</code> is used when the page closes.</td></tr>
+        <tr><td><b>Time on chatbot</b></td><td>Measured in the chat bundle: panel open, tab visible, activity within 60 s. The server caps the seconds it accepts.</td></tr>
+        <tr><td><b>Median</b></td><td>Daily totals keep a <b>time histogram</b>, so the median works for any range, even after detail rows are deleted.</td></tr>
+        <tr><td><b>Reports</b></td><td>Finished days come from <code>analytics_daily</code>. Today is computed live from detail rows.</td></tr>
+        <tr><td><b>Rollup + purge</b></td><td>Daily WP-Cron job: build totals, then delete old detail rows in batches of 5,000 with a 20 s limit and a follow-up run if needed.</td></tr>
+        <tr><td><b>Settings</b></td><td><code>mnaisp_analytics_settings</code>: <code>enabled</code> (on), <code>retention_days</code> (90, 0 = keep forever), <code>include_team</code> (off).</td></tr>
+        <tr><td><b>Admin</b></td><td>New tab <b>Analytics</b> (<code>#/analytics</code>), admins only. Settings: card on the <b>Settings</b> tab.</td></tr>
+        <tr><td><b>Plan / schema</b></td><td>Free. Schema <b>v5</b>; the planned messages-table rework moves to v6.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2 -->
+  <h2 id="flow"><span class="n">2</span>Flow</h2>
+  <p>One visitor, one day. Each row is one moment, read left to right.</p>
+  <div class="lanes">
+    <div class="head q">Browser</div>
+    <div class="head ctx">WordPress</div>
+    <div class="head good">Tables</div>
+
+    <div class="cell"><span class="step">1 · Page loads</span>Page not sent yet today → <code>track {view}</code> when the page is idle</div>
+    <div class="cell">Skips bots, team members (setting) and analytics off. Day = <code>wp_date</code>. Replies <code>{day}</code></div>
+    <div class="cell"><code>visits</code> upsert <code>(day, vid)</code><br><code>pages</code> upsert <code>(visit, page)</code></div>
+
+    <div class="cell"><span class="step">2 · Opens chat</span>Button / label / notification click, or first click or typing in the shortcode chat → <code>track {open}</code></div>
+    <div class="cell">Sets first open only if empty (first open of the day)</div>
+    <div class="cell"><code>visits.opened_at</code>, <code>first_open_page</code><br><code>pages.opened = 1</code></div>
+
+    <div class="cell"><span class="step">3 · Sends a message</span><code>/chat/ask {…, visitorId}</code> (no extra request)</div>
+    <div class="cell"><code>ChatController::ask</code> marks started and links the chat</div>
+    <div class="cell"><code>visits.started = 1</code>, <code>first_msg_page</code><br><code>conversations.visit_id</code></div>
+
+    <div class="cell"><span class="step">4 · Asks for a person</span>Same message flow</div>
+    <div class="cell"><code>LiveChatService::request_person</code></div>
+    <div class="cell"><code>visits.asked = 1</code></div>
+
+    <div class="cell empty"></div>
+    <div class="cell"><span class="step">5 · Team replies</span><code>LiveChatService::reply</code> (dashboard)</div>
+    <div class="cell"><code>visits.talked = 1</code> via <code>visit_id</code></div>
+
+    <div class="cell"><span class="step">6 · Closes / hides tab / every 2 min</span><code>track {time: 37}</code> via <code>sendBeacon</code></div>
+    <div class="cell">Adds the seconds (capped)</div>
+    <div class="cell"><code>visits.active_seconds</code></div>
+
+    <div class="cell empty"></div>
+    <div class="cell"><span class="step">7 · Daily cron</span>Rollup, then purge in batches</div>
+    <div class="cell"><code>daily</code> rows built<br>old <code>visits</code>/<code>pages</code> deleted</div>
+  </div>
+
+  <!-- 3 -->
+  <h2 id="vid"><span class="n">3</span>Visitor ID and the day</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Stored in the browser</h3>
+<pre><code>localStorage['mnaisp-analytics'] = {
+  vid:    "Xq3fP0…" ,   // 16 random bytes, base64url, 22 chars
+  day:    "2026-11-17", // site day, from the server
+  sent:   [pageKey…],   // pages already sent today
+  opened: [pageKey…]    // pages already opened on today
+}</code></pre>
+      <p>Shared by all tabs, so a visitor is counted once per day across tabs.</p>
+    </div>
+    <div class="card">
+      <h3>The server is the clock</h3>
+      <ul>
+        <li>Every track response returns <code>{ day }</code> in the site time zone.</li>
+        <li>If it differs from the stored day, the browser makes a <b>new ID</b> and empties <code>sent</code> / <code>opened</code>.</li>
+        <li>The visitor's own clock and time zone never matter.</li>
+        <li>The server only accepts IDs matching <code>^[A-Za-z0-9_-]{22}$</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout warn"><b>Edge cases.</b> If localStorage is blocked, the ID lives in memory for that page only, so the visitor may count again on the next page (rare, accepted). If the site time zone changes later, days already stored stay as they were.</div>
+
+  <!-- 4 -->
+  <h2 id="db"><span class="n">4</span>Database (schema v5)</h2>
+  <div class="er">
+    <div class="tbl q">
+      <h4>wp_mnaisp_analytics_visits<small>one row per visitor per day</small></h4>
+      <ul>
+        <li class="k">id <span>bigint PK</span></li>
+        <li class="k">day <span>date · UNIQUE(day, vid)</span></li>
+        <li class="k">vid <span>char(22)</span></li>
+        <li>device <span>desktop|mobile|tablet</span></li>
+        <li>opened_at <span>datetime, first open</span></li>
+        <li>first_open_page <span>→ pages.id</span></li>
+        <li class="new">first_msg_page <span>→ pages.id, 1st message</span></li>
+        <li>started <span>tinyint 0/1</span></li>
+        <li>asked <span>tinyint 0/1</span></li>
+        <li>talked <span>tinyint 0/1</span></li>
+        <li>active_seconds <span>int</span></li>
+        <li>created_at, updated_at <span>datetime</span></li>
+      </ul>
+    </div>
+    <div class="tbl ctx">
+      <h4>wp_mnaisp_analytics_pages<small>one row per visitor per page per day</small></h4>
+      <ul>
+        <li class="k">id <span>bigint PK</span></li>
+        <li class="k">visit_id <span>UNIQUE(visit_id, page_key)</span></li>
+        <li>day <span>date · KEY(day, page_key)</span></li>
+        <li class="k">page_key <span>char(16), sha1 of path</span></li>
+        <li>path <span>"/pricing/" no query</span></li>
+        <li>title <span>varchar(200)</span></li>
+        <li>opened <span>tinyint 0/1</span></li>
+      </ul>
+    </div>
+    <div class="tbl good">
+      <h4>wp_mnaisp_analytics_daily<small>totals, kept forever · PK(day, page_key)</small></h4>
+      <ul>
+        <li class="k">day <span>date</span></li>
+        <li class="k">page_key <span>'' = whole site</span></li>
+        <li>path, title</li>
+        <li>visitors, opened, first_opens <span>int</span></li>
+        <li>started, asked, talked <span>int</span></li>
+        <li>seconds_total / _ai / _person <span>bigint</span></li>
+        <li>openers_ai, openers_person <span>int</span></li>
+        <li>time_buckets <span>JSON histogram</span></li>
+        <li class="new">devices <span>JSON per device (site row)</span></li>
+        <li>updated_at</li>
+      </ul>
+    </div>
+    <div class="tbl warn">
+      <h4>wp_mnaisp_conversations<small>existing table, one new column</small></h4>
+      <ul>
+        <li>id, uuid, page_url, user_id, mode, … <span>unchanged</span></li>
+        <li class="new">visit_id <span>bigint NULL</span></li>
+      </ul>
+      <p style="padding:0 14px 12px;font-size:0.85rem;color:var(--muted);margin:0">The visit that <b>last</b> wrote in this chat. A chat continued the next day credits the new day's visit.</p>
+    </div>
+  </div>
+
+  <div class="callout q"><b>Per-page funnel.</b> Started, asked and talked go to the page where the visitor sent the <b>first message of the day</b> (<code>first_msg_page</code>). A visitor who opened on Home but wrote on Pricing counts as started on Pricing only.</div>
+
+  <h3>Median from a histogram</h3>
+  <p>Bucket upper bounds in seconds: <code>10 · 30 · 60 · 120 · 180 · 300 · 600 · 900 · 1800 · 3600 · ∞</code>. The median is the bucket holding the middle visitor, with an interpolated value shown as "≈ 1 m 20 s". Today and old ranges use the same method, so numbers never jump when details are deleted. The average stays exact (seconds ÷ openers).</p>
+
+  <h3>Row counts</h3>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Site</th><th>Table</th><th class="r">Per day</th><th class="r">90 days / 1 year</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3">5,000 visitors/day, 3 widget pages each</td><td>visits</td><td class="r">5,000</td><td class="r">450,000 (90 d)</td></tr>
+        <tr><td>pages</td><td class="r">15,000</td><td class="r">1.35 M (90 d)</td></tr>
+        <tr><td>daily</td><td class="r">≈ 200</td><td class="r">≈ 75,000 / year, kept</td></tr>
+        <tr><td rowspan="2">200 visitors/day, retention off</td><td>visits</td><td class="r">200</td><td class="r">≈ 73,000 / year</td></tr>
+        <tr><td>pages</td><td class="r">600</td><td class="r">≈ 220,000 / year</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5 -->
+  <h2 id="server"><span class="n">5</span>Server</h2>
+  <h3>New classes in <code>includes/Analytics/</code></h3>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Class</th><th>Job</th></tr></thead>
+      <tbody>
+        <tr><td><code>AnalyticsSettingsService</code></td><td>Option <code>mnaisp_analytics_settings</code>: validate and save, like <code>ConversationSettingsService</code></td></tr>
+        <tr><td><code>AnalyticsRepository</code></td><td>Upserts (<code>INSERT … ON DUPLICATE KEY UPDATE</code>), flags, seconds, report queries, rollup query, batched delete</td></tr>
+        <tr><td><code>AnalyticsTracker</code></td><td>Rules for one track request: off / bot / team checks, day, path cleanup, caps. Also <code>mark_started</code>, <code>mark_asked</code>, <code>mark_talked</code></td></tr>
+        <tr><td><code>AnalyticsReport</code></td><td>Range report: <code>daily</code> rows plus live detail queries for today; median from buckets</td></tr>
+        <tr><td><code>AnalyticsMaintenance</code></td><td>Daily cron: rollup, then purge loop</td></tr>
+        <tr><td><code>Rest\AnalyticsController</code></td><td><code>POST /analytics/track</code> (public), <code>GET /analytics/report</code>, <code>GET /analytics/pages</code>, <code>GET/POST /analytics/settings</code> (admin)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>POST /analytics/track</code> (public)</h3>
+  <div class="grid2">
+    <div class="card">
+<pre><code>{ "vid": "Xq3fP0…", "device": "mobile",
+  "events": [
+    { "t": "view", "path": "/pricing/", "title": "Pricing" },
+    { "t": "open", "path": "/pricing/", "title": "Pricing" },
+    { "t": "time", "s": 37 }
+  ] }
+
+→ { "day": "2026-11-17" }
+→ { "day": "2026-11-17", "off": true }   // browser stops</code></pre>
+    </div>
+    <div class="card">
+      <ul>
+        <li>No nonce (cached pages), like <code>/chat/ask</code>; <code>nocache_headers()</code>.</li>
+        <li><b>Skipped silently:</b> analytics off; bot user agent (regex + filter <code>mnaisp_analytics_is_bot</code>); team member via the login cookie + <code>LiveChatService::capability()</code>, unless <code>include_team</code> is on.</li>
+        <li>Rate limit <code>RateLimiter::allow('track', 30)</code> per minute.</li>
+        <li><b>Caps:</b> ≤ 10 events per request; time 1–300 s per event; ≤ 86,400 s per visit; ≤ 100 pages per visit per day; path ≤ 500 characters, title ≤ 200.</li>
+        <li>Same-site URLs only; the path is stored without domain, query or #.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Hooks into existing code</h3>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Place</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>ChatController::ask</code>, <code>ask_human</code>, <code>ask_person</code></td><td>Optional <code>visitorId</code>. After the honeypot check: <code>mark_started(vid, pageUrl)</code> (sets <code>first_msg_page</code> only when empty), then <code>conversations.visit_id = visit.id</code></td></tr>
+        <tr><td><code>LiveChatService::request_person</code></td><td><code>mark_asked(conversation.visit_id)</code></td></tr>
+        <tr><td><code>LiveChatService::reply</code></td><td><code>mark_talked(conversation.visit_id)</code></td></tr>
+        <tr><td><code>ChatConfig::to_array</code></td><td><code>analytics: { enabled, track }</code>; <code>track: false</code> for excluded team members (the server check is the real one)</td></tr>
+        <tr><td><code>Plugin</code></td><td>Wire services, routes, cron event + schedule, privacy-policy paragraph</td></tr>
+        <tr><td><code>Lifecycle</code></td><td>New option + 3 tables removed on uninstall, clear the cron hook</td></tr>
+        <tr><td><code>Tables</code> / <code>Migrations</code></td><td>3 tables + <code>conversations.visit_id</code>, <code>VERSION = 5</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout q"><b>Recording off.</b> Started is still counted: <code>mark_started</code> needs only the visitor ID, not a conversation row. With no live chat, asked and talked stay 0.</div>
+
+  <!-- 6 -->
+  <h2 id="browser"><span class="n">6</span>Browser</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3><code>widget/analytics.ts</code> (in the loader, every page)</h3>
+      <ul>
+        <li>Tiny, no React, no imports from chat modules.</li>
+        <li><b>Queue:</b> flushes after 1 s with <code>fetch keepalive</code>; uses <code>sendBeacon</code> on <code>pagehide</code> or when the tab is hidden.</li>
+        <li><b>View:</b> when the page is idle (<code>requestIdleCallback</code>, fallback 2 s), if the page isn't in <code>sent</code> yet.</li>
+        <li><b>Open (floating):</b> in <code>setOpen(true)</code> on a button, label or notification click. The automatic closed mount is not an open. Once per page per day.</li>
+        <li><b>Open (shortcode):</b> the first <code>pointerdown</code> or <code>keydown</code> inside <code>.mnaisp-chat-inline</code>.</li>
+        <li><b>Skip</b> when <code>navigator.webdriver</code> is set, analytics is off, or <code>track: false</code>.</li>
+        <li>Shares the ID with the chat bundle through <code>window.mnaispAnalytics = { vid(), time(s) }</code>.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><code>widget/useActiveTime.ts</code> (chat bundle)</h3>
+      <ul>
+        <li>Counts while the panel is open (inline: in viewport), the tab is visible, and there was activity in the last 60 s.</li>
+        <li><b>Activity:</b> typing, pointer down or move, scrolling in the chat, or a new message arriving (answer start/end, team reply, event).</li>
+        <li>Ticks once per second in memory. Sends the seconds on close, tab hidden, <code>pagehide</code>, and every 2 min while counting.</li>
+        <li>Never runs in the admin Preview, which doesn't use <code>useChat</code>.</li>
+      </ul>
+      <h3><code>useChat</code></h3>
+      <p><code>/chat/ask</code> and <code>sendToTeam</code> send <code>visitorId</code>.</p>
+    </div>
+  </div>
+  <h3>Requests per visitor (typical)</h3>
+  <div class="card tablewrap">
+    <table>
+      <thead><tr><th>Action</th><th>Requests</th></tr></thead>
+      <tbody>
+        <tr><td>Visits 5 pages, never opens the chat</td><td>5 (first time each page today). The same page again today: 0</td></tr>
+        <tr><td>Opens the chat, asks 3 questions, stays 4 min</td><td>+1 open, +2–3 time flushes. Questions add none (they go with <code>/chat/ask</code>)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7 -->
+  <h2 id="cron"><span class="n">7</span>Rollup and purge (cron)</h2>
+  <p>New daily event <code>mnaisp_analytics_daily</code>, scheduled from <code>admin_init</code> like the conversation purge.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>1 · Rollup (idempotent)</h3>
+<pre><code>days = every day &lt; today with detail rows
+       AND (no daily row yet
+            OR day ≥ today − 2)   ← late time / replies
+for each day:
+  REPLACE INTO daily  (site row + one row per page)
+  FROM visits / pages</code></pre>
+    </div>
+    <div class="card">
+      <h3>2 · Purge (retention_days &gt; 0)</h3>
+<pre><code>cutoff = today − retention_days   (only totalled days)
+loop:
+  DELETE FROM pages  WHERE day &lt; cutoff LIMIT 5000
+  DELETE FROM visits WHERE day &lt; cutoff LIMIT 5000
+  both &lt; 5000   → done
+  time &gt; 20 s   → single event in 120 s, stop</code></pre>
+    </div>
+  </div>
+  <div class="callout good"><b>Each DELETE commits on its own</b> (autocommit, no surrounding transaction), so locks stay short. If retention is 0, nothing is deleted, but the rollup still runs to keep reports fast.</div>
+
+  <!-- 8 -->
+  <h2 id="reports"><span class="n">8</span>Reports</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3><code>GET /analytics/report?from&amp;to[&amp;page]</code></h3>
+<pre><code>{ "funnel": { "visitors": 1000, "opened": 180,
+              "started": 120, "talked": 15, "asked": 22 },
+  "time": { "total": 29700, "avg": 165, "median": 80,
+            "ai":     { "avg": 140, "median": 70 },
+            "person": { "avg": 420, "median": 360 } },
+  "daily": [ { "day": "2026-11-11", "visitors": 140,
+               "opened": 25, "started": 17, "talked": 2 } ] }</code></pre>
+    </div>
+    <div class="card">
+      <h3><code>GET /analytics/pages?from&amp;to&amp;page&amp;per_page</code></h3>
+      <p>Rows: <code>page_key, path, title, first_opens, first_open_share, visitors, opened, open_rate</code>, sorted by first opens, plus <code>total</code>.</p>
+      <ul>
+        <li>A range is the sum of its days (your call).</li>
+        <li>Max 366 days; default last 30 days.</li>
+        <li><code>page</code> gives that page's funnel: visitors on it → opened on it → started there (first message of the day) → asked / talked (same visitors).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <h2 id="ui"><span class="n">9</span>Admin tab "Analytics"</h2>
+  <p>Sketch with example numbers. <code>pages/Analytics.tsx</code> + <code>api/analytics.ts</code>, admins only.</p>
+  <div class="mock">
+    <div class="bar-row">
+      <b>Analytics</b>
+      <div class="pills"><span class="pill">Today</span><span class="pill">7 days</span><span class="pill on">30 days</span><span class="pill">90 days</span><span class="pill">Custom ▾</span><span class="pill">↻ Refresh</span></div>
+    </div>
+    <div class="fun q"><span>Unique visitors</span><div class="b"><span style="width:100%"></span></div><span class="v">1,000 · 100%</span></div>
+    <div class="fun ctx"><span>Opened chatbot</span><div class="b"><span style="width:18%"></span></div><span class="v">180 · 18%</span></div>
+    <div class="fun good"><span>Started conversation</span><div class="b"><span style="width:12%"></span></div><span class="v">120 · 67%</span></div>
+    <div class="fun warn"><span>Talked to a person</span><div class="b"><span style="width:1.5%"></span></div><span class="v">15 · 13%</span></div>
+    <p style="font-size:0.85rem;color:var(--muted);margin:6px 0 0">Asked for a person: 22 (7 not answered)</p>
+    <div class="tiles">
+      <div class="tile"><b>2 m 45 s</b><small>Average time</small></div>
+      <div class="tile"><b>≈ 1 m 20 s</b><small>Median time</small></div>
+      <div class="tile"><b>8 h 15 m</b><small>Total time</small></div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--muted)">AI only: avg 2 m 20 s · median ≈ 1 m 10 s &nbsp;|&nbsp; With a person: avg 7 m · median ≈ 6 m</p>
+    <svg viewBox="0 0 600 110" width="100%" height="110" role="img" aria-label="Daily trend example" style="margin:6px 0 10px">
+      <polyline fill="none" stroke="var(--q)" stroke-width="2" points="0,40 60,35 120,45 180,30 240,38 300,25 360,33 420,28 480,36 540,22 600,30"/>
+      <polyline fill="none" stroke="var(--ctx)" stroke-width="2" points="0,85 60,82 120,88 180,78 240,84 300,75 360,80 420,77 480,83 540,72 600,78"/>
+      <polyline fill="none" stroke="var(--good)" stroke-width="2" points="0,93 60,92 120,95 180,89 240,93 300,87 360,91 420,88 480,92 540,85 600,89"/>
+      <polyline fill="none" stroke="var(--warn)" stroke-width="2" points="0,104 60,104 120,105 180,103 240,104 300,102 360,104 420,103 480,104 540,101 600,103"/>
+    </svg>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>First-open page</th><th class="r">First opens</th><th class="r">Share of first opens</th><th class="r">Visitors</th><th class="r">Open rate</th></tr></thead>
+        <tbody>
+          <tr><td>Pricing <small style="color:var(--muted)">/pricing/</small></td><td class="r">62</td><td class="r">34%</td><td class="r">240</td><td class="r">26%</td></tr>
+          <tr><td>Home <small style="color:var(--muted)">/</small></td><td class="r">48</td><td class="r">27%</td><td class="r">610</td><td class="r">8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.85rem;color:var(--muted);margin:8px 0 14px">Click a row: funnel for that page in a drawer. [Show all]</p>
+    <div class="tile"><b style="font-size:1rem">Settings tab → Analytics card</b><small>Analytics on/off · Keep details [90] days (0 = forever) · Count team members. When analytics is off, this tab shows "Analytics is off" with a link to Settings.</small></div>
+  </div>
+  <ul style="margin-top:12px">
+    <li>Charts: own small SVG, no chart library (your call). The trend chart has 4 lines (visitors, opened, started, talked), a day axis, a hover tooltip with that day's numbers, and legend toggles. The funnel bars are plain divs.</li>
+    <li>Empty state: "No visitors counted yet. Numbers appear after visitors load a page with the chatbot."</li>
+    <li>Data loads when the tab opens and on Refresh; no polling.</li>
+  </ul>
+
+  <!-- 10 -->
+  <h2 id="privacy"><span class="n">10</span>Privacy</h2>
+  <div class="grid3">
+    <div class="card"><h3>Privacy-policy text</h3><p>New paragraph: an anonymous one-day ID in the browser; which chat pages were visited; whether the chat was opened or used; time spent. No IP, no message text. Details kept N days.</p></div>
+    <div class="card"><h3>No personal data</h3><p>Analytics tables hold no user ID and no IP, so no GDPR exporter or eraser is needed.</p></div>
+    <div class="card"><h3>Paths only</h3><p>No domain, no query strings, no <code>#</code>, because query strings can hold emails or tokens.</p></div>
+  </div>
+
+  <!-- 11 -->
+  <h2 id="milestones"><span class="n">11</span>Milestones</h2>
+  <div class="card">
+    <div class="ms">
+      <div class="id">A0</div>
+      <div class="body"><p><b>Database and settings.</b> Schema v5 (3 tables + <code>conversations.visit_id</code>), <code>Tables</code>, <code>AnalyticsSettingsService</code>, repository writes, uninstall.</p><small>Done when: the dev DB is migrated (backup first) and the tables exist.</small></div>
+      <div class="id">A1</div>
+      <div class="body"><p><b>Server tracking.</b> <code>AnalyticsTracker</code>, <code>POST /analytics/track</code>, hooks in ask / request_person / reply, <code>ChatConfig.analytics</code>.</p><small>Done when: WP-CLI checks pass for upserts, bot and team skips, caps, and started/asked/talked.</small></div>
+      <div class="id">A2</div>
+      <div class="body"><p><b>Browser.</b> <code>widget/analytics.ts</code> (view, open, queue, beacon, ID rotation), <code>useActiveTime</code>, <code>visitorId</code> in <code>/chat/ask</code>.</p><small>Done when: a Playwright throwaway check shows rows appear, a repeat page sends nothing, and idle stops the clock.</small></div>
+      <div class="id">A3</div>
+      <div class="body"><p><b>Cron.</b> <code>AnalyticsMaintenance</code>: rollup, batched purge, schedule.</p><small>Done when: fake old rows are rolled up, the purge stops at the time limit and schedules a follow-up, and retention 0 keeps details.</small></div>
+      <div class="id">A4</div>
+      <div class="body"><p><b>Reports and UI.</b> <code>AnalyticsReport</code>, report/pages/settings REST, Analytics tab, <code>AnalyticsSettingsCard</code> on Settings.</p><small>Done when: numbers match a hand count on dev data and funnel steps never grow.</small></div>
+      <div class="id">A5</div>
+      <div class="body"><p><b>Finish.</b> Privacy text, <code>docs.html</code> schema, plan deviations, WWC note.</p><small>Done when: docs are updated and committed.</small></div>
+    </div>
+  </div>
+  <p style="margin-top:12px;color:var(--muted)">No new automated tests (your call: tests later). Checks use WP-CLI scripts and throwaway Playwright scripts, not committed.</p>
+
+  <!-- 12 -->
+  <h2 id="questions"><span class="n">12</span>Review questions (all answered 17 Nov 2026)</h2>
+  <div class="card">
+    <ol class="qs">
+      <li><b>Per-page funnel. <span class="tag good">Answered</span></b>Alternative chosen: started = first message of the day sent on that page; asked / talked go to that same page. Each started visitor counts on one page. Needs only <code>visits.first_msg_page</code> and the <code>pageUrl</code> that <code>/chat/ask</code> already sends.</li>
+      <li><b>Charts. <span class="tag good">Answered</span></b>Own small SVG components, no chart library.</li>
+      <li><b>Approximate median. <span class="tag good">Answered</span></b>Taken from the time buckets and shown with "≈" for every range. The average stays exact.</li>
+      <li><b>Time flush every 2 min. <span class="tag good">Answered</span></b>Send every 2 min while counting, plus on close, tab hidden and page close. A crash loses at most 2 min.</li>
+      <li><b>Store device now. <span class="tag good">Answered</span></b>Stored in <code>visits.device</code>, and the site's daily row keeps per-device counts (<code>devices</code> JSON), so the later device split works for old days too. No device UI yet.</li>
+      <li><b>On by default. <span class="tag good">Answered</span></b>On for new installs and for existing sites after the update.</li>
+      <li><b>Settings place. <span class="tag good">Answered</span></b>Settings tab: own card <code>AnalyticsSettingsCard</code> after the widget card, with its own Save. The Analytics tab links to it when analytics is off.</li>
+      <li><b>Endpoint cost. <span class="tag good">Answered</span></b>Normal REST endpoint. A lighter endpoint only later, if a big site needs it.</li>
+    </ol>
+  </div>
+</main>
+</body>
+</html>

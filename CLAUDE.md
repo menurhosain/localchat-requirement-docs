@@ -117,6 +117,19 @@ Claude's role: research assistant.
   Retention: detail rows 90 days default, setting days or OFF (keep forever); daily totals forever; daily WP-Cron purge in batches.
   All analytics FREE. Recording off = analytics keeps counting, person steps show 0, no note.
   DNT/GPC ignored, count everyone. ALL questions answered. Next = architecture + plan.
+- 2026-11-17: Analytics plan drafted docs/analytics-plan.md (draft for review): browser tracking in loader (localStorage vid,
+  rotated when server day changes, key (day,vid)), POST /analytics/track batched + sendBeacon, started/asked/talked
+  server-side via conversations.visit_id, schema v5 (analytics_visits, analytics_pages, analytics_daily + time histogram
+  for median), cron rollup + batched purge (5k, 20 s budget, follow-up event), Analytics tab. Milestones A0–A5.
+  8 review questions in section 12.
+  Q1 answered: per-page funnel = started/asked/talked credited to page of first message of the day (visits.first_msg_page).
+  Q2 answered: charts = own SVG components, no chart library.
+  Q3 answered: approximate median from time buckets (≈) for every range.
+  Q4 answered: time sent every 2 min while counting + close/hidden/pagehide.
+  Q5 answered: store device now (visits.device + daily.devices JSON on site row), no UI yet.
+  Q6 answered: analytics ON by default for new installs and existing sites.
+  Q7 answered: settings = AnalyticsSettingsCard on Settings tab (after WidgetSettingsCard).
+  Q8 answered: normal REST endpoint. ALL plan questions answered; plan status reviewed. Next = A0 (schema v5).
 
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
@@ -290,4 +303,5 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/search-flow.md` — how a question finds its answer: flow, dot product + RRF math, glossary (study doc); update when search changes
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
 - `docs/analytics-requirements.md` / `.html` — chatbot analytics requirements (funnel, time on chatbot, first-open page, privacy, open questions); plan comes later
+- `docs/analytics-plan.md` / `.html` — analytics implementation plan: tracking flow, visitor ID/day, schema v5 tables, track endpoint, hooks, rollup/purge cron, reports, Analytics tab, milestones A0–A5
 - `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), alert channel pattern, code map; update when HandoffDetector / request_person / presence times change
