@@ -138,6 +138,32 @@ Claude's role: research assistant.
   mnaisp_analytics_daily: rollup + batched purge), A4 b488340 (AnalyticsReport, GET report/pages, GET/POST settings, Analytics tab
   with own SVG chart, AnalyticsSettingsCard on Settings), A5 privacy text + docs. Deviations: plan section 13. docs.html Tables 5–7.
 
+- 2026-11-18: Per-device widget position (Style tab: desktop/tablet/mobile, 6 positions, offsets, hide) committed 9126fa2 on master.
+- 2026-11-18: NEW feature: LEAD FORM IN CHAT. Requirements written (no plan yet): docs/lead-form-requirements.md + .html.
+  User's ask: name/email/phone form inline in chat, closable, never auto-shown again after close, reopenable later.
+  WHEN to show = DECIDED: after 2nd answer + early on dont_know / offline handoff; owner setting. Buying words dropped (user's call).
+  Reopen proposal: "Fill in" line on collapsed card + header contact icon + "Leave your details" link on later dont_know.
+  FORM BUILDER (user's call): not hardcoded; owner builds form from 4 types Text (input text), Number (input number), Email, Textarea.
+  Intro text / Send / thank-you = form settings, not fields. Phone = Text field (not Number).
+  Stable field IDs, label snapshot per lead, max 10 fields, consent = built-in switch. Default form: Name (Text, req) + Email (req) + Phone (Text).
+  Q4: leads ALWAYS saved, even recording off (then no conversation link / transcript).
+  Q5 live chat: no AUTO form; team member button "Ask for contact details" sends event (live polling) that opens the
+  form in visitor's chat, even if closed/submitted before; agent sees sent/left details/closed. Header icon stays. Q6 leads kept until admin deletes (no
+  retention setting). Q7 no Free/Pro, one plugin. Q8 no pre-fill. ALL QUESTIONS ANSWERED.
+  Header icon stays during live chat; agent button re-opens form even if done (user confirmed).
+- 2026-11-18: Lead form plan drafted docs/lead-form-plan.md + .html (draft for review): option mnaisp_lead_form (enabled +
+  trigger after_answers|dont_know|pre_chat|manual), triggers in browser (useChat, entry role 'lead', localStorage
+  mnaisp-lead-v1), schema v6 wp_mnaisp_leads (answers JSON + label snapshots, linked by conversation_uuid), events
+  lead_requested/lead_submitted/lead_closed, POST /chat/lead + /chat/lead/closed, agent POST /live/chats/{id}/lead-form,
+  AlertService::lead, Leads tab (list + Form builder), privacy exporter/eraser. Milestones LF0–LF6. Review Q1 answered: SPLIT (switch "Show the lead form" + select "When to show it" incl. manual).
+  Q2–Q7 answered by "ok, start building" (= recommendations).
+- 2026-11-18: LEAD FORM BUILT on master (not merged into WWC): LF0 8a08a1d+9fe0c18 (schema v6 wp_mnaisp_leads,
+  LeadFormSettingsService, LeadRepository), LF1 698bddf (POST /chat/lead + /chat/lead/closed, alert_on_lead, AI handoff
+  state in answers, poll filter, privacy exporter/eraser), LF2 7969994 (widget LeadCard, triggers, mnaisp-lead-v1,
+  header icon, "Leave your details"), LF3 1b28e1e (Leads tab + Form builder + preview), LF4 fac6184 (Leads list, sheet,
+  delete, CSV, conversation marker), LF5 2026fd3 ("Ask for contact details" in Live chat). Deviations: plan section 13.
+  docs.html Table 8.
+
 ## Scope / Questions to Answer
 - [x] Pick existing plugin or build own? BUILD OWN.
 - [ ] Existing plugins in market: features, pricing, reviews, weaknesses (5 done)
@@ -311,4 +337,6 @@ Detail per plugin in `plugins/NN-slug.md`. Summary here.
 - `docs/conversation-search.html` — how follow-ups ("yes", "specification?") are searched: context text, two searches + take-turns merge, clarifying-question + price/quote prompt rules, {contact} setting, duplicate-source drop, why, code map, debug query; update when contextQuery / AnswerService merge change
 - `docs/analytics-requirements.md` / `.html` — chatbot analytics requirements (funnel, time on chatbot, first-open page, privacy, open questions); plan comes later
 - `docs/analytics-plan.md` / `.html` — analytics implementation plan: tracking flow, visitor ID/day, schema v5 tables, track endpoint, hooks, rollup/purge cron, reports, Analytics tab, milestones A0–A5
+- `docs/lead-form-requirements.md` / `.html` — lead form in chat requirements (when to show, close/reopen, fields, leads tab, privacy, open questions); plan comes later
+- `docs/lead-form-plan.md` / `.html` — lead form implementation plan: settings, triggers, schema v6 leads table, REST, widget card, admin Leads tab, live chat button, milestones LF0–LF6
 - `docs/live-agent-request.html` — visitor asks for a person: phrase check + [[HANDOFF]] AI marker, honest replies (team online / offline / 5-min expiry + contact), Live chat badge, event rows, 5-min presence rule (team online / agent away / hand-back), browser notifications, email alerts (when dispatched + delivery), alert channel pattern, code map; update when HandoffDetector / request_person / presence times change

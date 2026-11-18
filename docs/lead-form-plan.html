@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Form Plan</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --text: #1f2328; --muted: #5b616b; --border: #e3e1da; --line: #cfccc2;
+    --code-bg: #f0eee8; --q: #2b6cb0; --q-soft: #e6eff9; --ctx: #6b4fa3; --ctx-soft: #efeaf8;
+    --good: #2f6f5e; --good-soft: #e4f0ec; --warn: #9a5a12; --warn-soft: #fbf0e1; --bad: #a33b3b; --bad-soft: #f8e7e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+      --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+      --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181b; --surface: #1f2226; --text: #e8e6e1; --muted: #a3a8b0; --border: #33373d; --line: #454a52;
+    --code-bg: #2a2e33; --q: #7fb2ea; --q-soft: #1c2a3a; --ctx: #b9a2e6; --ctx-soft: #2a2338;
+    --good: #7cc2ad; --good-soft: #1f3530; --warn: #f0b46a; --warn-soft: #3a2b18; --bad: #ee9090; --bad-soft: #3a2020;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 10px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.4rem; margin: 64px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 0.9rem; flex: none; }
+  h3 { font-size: 1.05rem; margin: 22px 0 8px; }
+  .card h3 { margin-top: 0; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  .lead { color: var(--muted); max-width: 780px; font-size: 1.05rem; }
+  .meta { color: var(--muted); font-size: 0.92rem; margin-bottom: 18px; }
+  code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 0.82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 12px 0; }
+  pre code { background: none; padding: 0; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  nav.toc a { color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface); padding: 5px 12px; border-radius: 999px; font-size: 0.9rem; }
+  nav.toc a:hover { border-color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-top: 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
+  .grid2 > *, .grid3 > * { margin: 0 !important; }
+  .callout { border-left: 4px solid var(--c); background: var(--s); border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .callout b { color: var(--c); }
+  .good { --c: var(--good); --s: var(--good-soft); }
+  .warn { --c: var(--warn); --s: var(--warn-soft); }
+  .bad { --c: var(--bad); --s: var(--bad-soft); }
+  .q { --c: var(--q); --s: var(--q-soft); }
+  .ctx { --c: var(--ctx); --s: var(--ctx-soft); }
+  .tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--s); color: var(--c); white-space: nowrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .tablewrap { overflow-x: auto; }
+
+  /* swimlanes */
+  .lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+  .lane { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  .lane h3 { font-size: 0.9rem; margin: 0 0 10px; color: var(--c); }
+  .st { border-radius: 8px; padding: 7px 10px; background: var(--s); border: 1px solid var(--border); font-size: 0.85rem; margin-bottom: 8px; position: relative; }
+  .st small { display: block; color: var(--muted); font-size: 0.76rem; }
+  .arrow { text-align: center; color: var(--muted); font-size: 0.8rem; margin: -4px 0 4px; }
+
+  /* milestones */
+  .ms { display: grid; grid-template-columns: 70px 1fr; gap: 10px 14px; align-items: start; }
+  .ms .id { font-weight: 700; font-variant-numeric: tabular-nums; background: var(--q-soft); color: var(--q); border-radius: 8px; text-align: center; padding: 4px 0; }
+  .ms .what small { display: block; color: var(--muted); font-size: 0.82rem; }
+
+  ol.qs li { margin-bottom: 12px; }
+  ol.qs li b { display: block; }
+  ol.qs li span { color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .grid2, .grid3, .lanes { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lead Form in Chat: Plan</h1>
+  <p class="meta">Built 18 Nov 2026 (LF0–LF6, commits on master; deviations in the md, section 13). Source: <code>docs/lead-form-plan.md</code> · Requirements: <code>docs/lead-form-requirements.html</code></p>
+  <p class="lead">How the lead form gets built: an owner-built form in the chat, triggers that run in the visitor's browser, a new leads table, a team-member button in Live chat, email alerts, and a Leads tab with CSV export.</p>
+
+  <nav class="toc">
+    <a href="#summary">Summary</a>
+    <a href="#flow">Flow</a>
+    <a href="#settings">Form settings</a>
+    <a href="#db">Database</a>
+    <a href="#server">Server</a>
+    <a href="#widget">Widget</a>
+    <a href="#admin">Admin</a>
+    <a href="#privacy">Privacy</a>
+    <a href="#edge">Edge cases</a>
+    <a href="#ms">Milestones</a>
+    <a href="#questions">Review questions</a>
+    <a href="#built">Built</a>
+  </nav>
+
+  <h2 id="summary"><span class="n">1</span>Summary</h2>
+  <div class="card tablewrap">
+    <table>
+      <tr><th>Item</th><th>Decision (proposed)</th></tr>
+      <tr><td>Form definition</td><td>One option <code>mnaisp_lead_form</code>: switch, trigger, texts, consent, fields with stable IDs</td></tr>
+      <tr><td>Field types</td><td><code>text</code>, <code>number</code>, <code>email</code>, <code>textarea</code>. 1 to 10 fields</td></tr>
+      <tr><td>Where triggers run</td><td>In the <b>browser</b> (<code>useChat</code>): it already knows answers, "I don't know", handoff state, live mode. No extra request</td></tr>
+      <tr><td>"Never again by itself"</td><td><code>localStorage</code> <code>mnaisp-lead-v1</code> = closed / submitted</td></tr>
+      <tr><td>"Not twice in one chat"</td><td>A lead card entry already in this chat's entries</td></tr>
+      <tr><td>Card in the chat</td><td>New entry <code>role: 'lead'</code>, saved with the other entries</td></tr>
+      <tr><td>Storage</td><td>New table <code>wp_mnaisp_leads</code> (schema v6), answers JSON with label snapshots</td></tr>
+      <tr><td>Link to the chat</td><td>By <b>conversation UUID</b>: works before the first question and with recording off</td></tr>
+      <tr><td>Live chat</td><td>Agent button → event <code>lead_requested</code> → visitor poll → card opens. Results back as <code>lead_submitted</code> / <code>lead_closed</code></td></tr>
+      <tr><td>Email</td><td>New alert type <code>lead</code>, "Email me new leads" (default Always)</td></tr>
+      <tr><td>Admin</td><td>New tab <b>Leads</b> (admins): list, detail, delete, CSV + <b>Form</b> sub-tab (builder, preview)</td></tr>
+      <tr><td>Privacy</td><td>Personal-data exporter + eraser by email, policy paragraph, no IP</td></tr>
+    </table>
+  </div>
+
+  <h2 id="flow"><span class="n">2</span>Flow</h2>
+  <div class="lanes">
+    <div class="lane q">
+      <h3>Visitor's browser</h3>
+      <div class="st">Answer finished<small>shouldOffer(): feature on, not done, no card in this chat, AI mode, answers ≥ N or don't know or offline handoff</small></div>
+      <div class="arrow">▼</div>
+      <div class="st">Card added to the chat<small>entry role 'lead', fields from config</small></div>
+      <div class="arrow">▼</div>
+      <div class="st">Send → <code>POST /chat/lead</code><small>then thank-you line, done = submitted</small></div>
+      <div class="st">✕ → <code>POST /chat/lead/closed</code><small>card shrinks to "Fill in" line, done = closed</small></div>
+      <div class="st">Poll gets <code>lead_requested</code><small>new card opens, even when done</small></div>
+    </div>
+    <div class="lane good">
+      <h3>Server</h3>
+      <div class="st">Validate vs current fields<small>honeypot, rate limit, required, email, number min/max, lengths</small></div>
+      <div class="st">Event <code>lead_submitted</code><small>only when the conversation row exists</small></div>
+      <div class="st">Insert lead<small>answers + label snapshots, email, name, event_id</small></div>
+      <div class="st">Queue email alert<small>AlertService::lead()</small></div>
+      <div class="st">Event <code>lead_requested</code><small>written by the agent button, sent in the visitor poll</small></div>
+    </div>
+    <div class="lane ctx">
+      <h3>Team member (Live chat)</h3>
+      <div class="st">Presses "Ask for contact details"<small><code>POST /live/chats/{id}/lead-form</code>, only while in charge</small></div>
+      <div class="st">Thread: "Contact form sent"</div>
+      <div class="st">Thread: "Visitor left contact details"<small>answers shown inline</small></div>
+      <div class="st">or "Visitor closed the contact form"</div>
+    </div>
+  </div>
+
+  <h2 id="settings"><span class="n">3</span>Form settings</h2>
+  <p>New <code>includes/Leads/LeadFormSettingsService.php</code>, same pattern as <code>WidgetSettingsService</code>. Sent to the widget as <code>widget.leadForm</code> in <code>ChatConfig</code>. Old cached pages without it = feature off.</p>
+<pre><code>enabled            true             whole feature: triggers, header icon, agent button
+trigger            after_answers    after_answers | dont_know | pre_chat | manual
+after_answers      2                1..10
+pre_chat_required  false            pre_chat: no ✕, input locked until sent
+intro / submit_text / thanks_text
+consent            { enabled: false, text: "I agree to the privacy policy." }
+fields             [ {id: f_name,  type: text,  label: Name,  required: true},
+                     {id: f_email, type: email, label: Email, required: true},
+                     {id: f_phone, type: text,  label: Phone, required: false} ]</code></pre>
+  <div class="card tablewrap">
+    <table>
+      <tr><th>Trigger</th><th>Shows the form by itself</th><th>Early triggers (don't know, offline handoff)</th></tr>
+      <tr><td><code>after_answers</code> <span class="tag good">default</span></td><td>After N finished answers in this chat</td><td>Yes</td></tr>
+      <tr><td><code>dont_know</code></td><td>Never on count</td><td>Yes</td></tr>
+      <tr><td><code>pre_chat</code></td><td>Before the first message</td><td>Yes, if skipped and not done</td></tr>
+      <tr><td><code>manual</code></td><td>Never</td><td>No: only header icon and team member</td></tr>
+    </table>
+  </div>
+  <div class="callout q"><b>Field rules</b><br>ID <code>f_</code> + 8 random chars, kept when the label changes · label 1–100 chars · placeholder ≤ 100 · Number: optional min / max · 1–10 fields · consent text may hold a <code>[text](https://…)</code> link or <code>{privacy}</code> (site privacy page).</div>
+
+  <h2 id="db"><span class="n">4</span>Database (schema v6)</h2>
+  <div class="card">
+    <h3><code>wp_mnaisp_leads</code>: one row per submitted form</h3>
+<pre><code>id                 bigint PK
+conversation_uuid  char(36) NULL     widget conversation ID (row may not exist yet / recording off)
+event_id           bigint NULL       messages row "lead_submitted"
+answers            longtext          JSON [{id, type, label, value}], label as sent
+email              varchar(191)      first Email answer, lowercased  (search, export, privacy eraser)
+name               varchar(191)      first Text answer               (list, email subject)
+consent            tinyint(1)
+trigger_reason     varchar(20)       after_answers | dont_know | handoff | pre_chat | visitor | agent
+page_url           varchar(500)      no query string
+user_id            bigint NULL       logged-in visitor
+created_at         datetime          UTC
+KEY created_at, KEY email, KEY conversation_uuid</code></pre>
+    <p>Kept until the admin deletes them: <b>no cron purge</b>. Conversation purge leaves leads; the transcript link just goes away. Added to <code>Tables::ALL</code> and the uninstall list.</p>
+  </div>
+  <div class="card tablewrap">
+    <h3>New event names in <code>wp_mnaisp_messages</code> (no schema change)</h3>
+    <table>
+      <tr><th>Event</th><th>Written when</th><th>user_id</th><th>Visitor poll</th></tr>
+      <tr><td><code>lead_requested</code></td><td>Agent pressed "Ask for contact details"</td><td>agent</td><td><span class="tag good">sent</span> opens the card</td></tr>
+      <tr><td><code>lead_submitted</code></td><td>Visitor sent the form</td><td>null</td><td><span class="tag bad">not sent</span></td></tr>
+      <tr><td><code>lead_closed</code></td><td>Visitor closed the form</td><td>null</td><td><span class="tag bad">not sent</span></td></tr>
+    </table>
+  </div>
+
+  <h2 id="server"><span class="n">5</span>Server</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>New classes <code>includes/Leads/</code></h3>
+      <ul>
+        <li><code>LeadFormSettingsService</code>: option, validation, <code>public_config()</code></li>
+        <li><code>LeadRepository</code>: insert, find, list, delete many, by UUID, by email</li>
+        <li><code>LeadService</code>: <code>submit()</code>, <code>closed()</code></li>
+        <li><code>LeadPrivacy</code>: exporter, eraser, policy paragraph</li>
+        <li><code>LeadCsv</code>: one column per label seen in the range</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Public REST (widget)</h3>
+      <ul>
+        <li><code>POST /chat/lead</code>: honeypot (silent OK), 3/min + 10/day per visitor, validate vs <b>current</b> fields (<code>422</code> with field errors), event, insert, alert</li>
+        <li><code>POST /chat/lead/closed</code>: event when the conversation exists, <code>204</code></li>
+      </ul>
+    </div>
+    <div class="card tablewrap">
+      <h3>Admin REST (admins)</h3>
+      <table>
+        <tr><td><code>GET/POST /lead-form</code></td><td>Builder settings</td></tr>
+        <tr><td><code>GET /leads</code></td><td>List: search, range, paging</td></tr>
+        <tr><td><code>GET /leads/{id}</code></td><td>All answers + conversation</td></tr>
+        <tr><td><code>DELETE /leads</code></td><td>One or many</td></tr>
+        <tr><td><code>GET /leads/export</code></td><td>CSV (UTF-8 BOM)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Live chat (admins + editors)</h3>
+      <p><code>POST /live/chats/{id}/lead-form</code> → <code>LiveChatService::ask_lead()</code>: chat in human mode, this agent in charge, feature on → event <code>lead_requested</code>. Thread rows for <code>lead_submitted</code> carry the answers (one query per page).</p>
+    </div>
+  </div>
+  <div class="card tablewrap">
+    <h3>Hooks into existing code</h3>
+    <table>
+      <tr><td><code>ChatConfig</code></td><td><code>widget.leadForm</code></td></tr>
+      <tr><td><code>ChatController</code> streamed answer</td><td>Final payload gets <code>handoff</code> state also when the <b>AI marker</b> asked for a person (today only the phrase path has it)</td></tr>
+      <tr><td><code>visitor_poll</code></td><td>Skip <code>lead_submitted</code> / <code>lead_closed</code></td></tr>
+      <tr><td><code>AlertService</code></td><td><code>lead()</code>: "New lead: {name or email}", answers, recent transcript, link to <code>#/leads/{id}</code>. Setting <code>alert_on_lead</code> Always / Never. Cap filter <code>mnaisp_alerts_leads_per_hour</code> (30)</td></tr>
+      <tr><td><code>ConversationsController</code></td><td>Leads by UUID for the viewer marker</td></tr>
+      <tr><td><code>Migrations</code></td><td><code>VERSION = 6</code></td></tr>
+    </table>
+  </div>
+
+  <h2 id="widget"><span class="n">6</span>Widget</h2>
+  <p>Chat bundle only; the tiny loader doesn't change. No extra request while chatting: 1 on submit, at most 1 on close, agent requests ride the existing poll.</p>
+  <div class="card tablewrap">
+    <h3>When <code>offerLead()</code> adds the card</h3>
+    <p>All must hold: feature on · not live chat · not done · no card in this chat · answer finished.</p>
+    <table>
+      <tr><th>Trigger</th><th>Checked after</th></tr>
+      <tr><td><code>after_answers</code></td><td>An answer finishes and finished AI answers in this chat ≥ N</td></tr>
+      <tr><td>can't answer</td><td>An answer finishes <code>dont_know</code></td></tr>
+      <tr><td>offline handoff</td><td><code>handoff</code> = offline / off in the answer, or poll event <code>request_expired</code></td></tr>
+      <tr><td><code>pre_chat</code></td><td>Chat opens empty: card first. Required → no ✕, input locked</td></tr>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="callout good"><b>Always available (any mode, ignores "done")</b><br>Header contact icon (scrolls to an open card or adds one) · "Fill in" on a skipped card · poll event <code>lead_requested</code> (adds a card, unread +1 when closed).</div>
+    <div class="callout warn"><b>Only after closing</b><br>"Leave your details" link under later <code>dont_know</code> answers. Not after submit.</div>
+  </div>
+  <div class="card">
+    <h3><code>LeadCard.tsx</code></h3>
+    <ul>
+      <li>Inputs from config, labels, <code>required</code>, <code>min</code>/<code>max</code>, <code>autocomplete</code> hints.</li>
+      <li>Same checks in the browser as on the server; server field errors under each field.</li>
+      <li>Focus moves into the card only when the visitor or agent opened it, never on automatic triggers (typing is never interrupted). Esc closes.</li>
+      <li>Lead entries skipped in <code>completedTurns()</code> / <code>contextQuery()</code>: the AI never sees them.</li>
+      <li>"New conversation" clears the card but not <code>mnaisp-lead-v1</code>.</li>
+    </ul>
+  </div>
+
+  <h2 id="admin"><span class="n">7</span>Admin</h2>
+  <div class="grid2">
+    <div class="card"><h3>Leads tab → Leads</h3>Table (date, name, email, page, how shown, conversation link), search, date presets, select + delete, Export CSV. Row → side sheet with every answer (label as sent), consent, page, conversation link.</div>
+    <div class="card"><h3>Leads tab → Form</h3>Switch, trigger (+ N, + required before chatting), texts, consent. Fields: add by type, edit, up / down, delete ("old leads keep their answers"). Live preview of the real card, like the Style tab.</div>
+    <div class="card"><h3>Live chat</h3>"Ask for contact details" next to the reply box while in charge; 10 s cool-down. Thread rows: sent · left details (answers) · closed.</div>
+    <div class="card"><h3>Conversations + Settings</h3>Viewer marker with the answers (box on top for leads sent before the first question). Alerts card: "Email me new leads" Always / Never.</div>
+  </div>
+
+  <h2 id="privacy"><span class="n">8</span>Privacy</h2>
+  <ul>
+    <li>Exporter "Chatbot leads" and eraser (deletes) by email.</li>
+    <li>Policy paragraph in the existing <code>privacy_policy_text()</code>: what is collected, kept until deleted, who gets the email.</li>
+    <li>No IP. Page URL without query string.</li>
+  </ul>
+
+  <h2 id="edge"><span class="n">9</span>Edge cases</h2>
+  <div class="card tablewrap">
+    <table>
+      <tr><td>Recording off</td><td>Lead saved and emailed; no event, transcript or link</td></tr>
+      <tr><td>Sent before the first question</td><td>Has the UUID; link appears once the conversation is recorded</td></tr>
+      <tr><td>Owner changes fields mid-visit</td><td>Server checks current form; missing new required field → "This form changed, please reload"</td></tr>
+      <tr><td>Owner deletes a field</td><td>Old leads keep label + value; CSV shows the old label as its own column</td></tr>
+      <tr><td>Agent sends twice</td><td>Open card already there → focus it, no second card</td></tr>
+      <tr><td>Hand-back to AI</td><td>Card stays; automatic triggers apply again</td></tr>
+      <tr><td><code>localStorage</code> blocked</td><td>Not remembered across visits; still once per chat</td></tr>
+      <tr><td>Shortcode chat</td><td>Same card, triggers and header icon</td></tr>
+    </table>
+  </div>
+
+  <h2 id="ms"><span class="n">10</span>Milestones</h2>
+  <div class="card ms">
+    <div class="id">LF0</div><div class="what">Schema v6 leads table, uninstall list, <code>LeadFormSettingsService</code>, <code>LeadRepository</code><small>Done when: table created on upgrade, settings round-trip</small></div>
+    <div class="id">LF1</div><div class="what">Public endpoints, <code>ChatConfig.leadForm</code>, handoff state in streamed answers, poll filter, email alert + setting, privacy exporter / eraser / policy<small>Done when: a curl submit saves a lead and sends the email</small></div>
+    <div class="id">LF2</div><div class="what">Widget: card, triggers, done flag, header icon, "Fill in", "Leave your details", pre-chat<small>Done when: full visitor flow works, floating + shortcode</small></div>
+    <div class="id">LF3</div><div class="what">Admin Form sub-tab: builder, trigger, texts, consent, preview<small>Done when: owner builds a form, the widget uses it</small></div>
+    <div class="id">LF4</div><div class="what">Admin Leads sub-tab: list, search, range, sheet, delete, CSV; Conversations marker<small>Done when: leads listed, exported, deleted</small></div>
+    <div class="id">LF5</div><div class="what">Live chat button, <code>lead_requested</code> → card, thread rows<small>Done when: agent asks, visitor fills, agent sees answers</small></div>
+    <div class="id">LF6</div><div class="what">Docs (docs.html, CLAUDE.md), build, lint, PHPCS<small>Master only; WWC merge only when asked</small></div>
+  </div>
+
+  <h2 id="questions"><span class="n">11</span>Review questions <span class="tag good">all answered</span></h2>
+  <div class="card">
+    <ol class="qs">
+      <li><b>Off vs Manual</b><span>Split: switch "Show the lead form" + "When to show it" with Manual.</span></li>
+      <li><b>Leads tab admins only</b><span>Yes. Editors send the form and see answers in the live thread.</span></li>
+      <li><b>Pre-chat required</b><span>Yes, as an option (no ✕, input locked); default not required.</span></li>
+      <li><b>Email</b><span>Default Always, same addresses as the other alerts.</span></li>
+      <li><b>Spam limits</b><span>3 per minute, 10 per day per visitor.</span></li>
+      <li><b>Header icon</b><span>Shown from the start.</span></li>
+      <li><b>Consent checkbox</b><span>Off by default, with an EU / GDPR hint.</span></li>
+    </ol>
+  </div>
+
+  <h2 id="built"><span class="n">12</span>Built: deviations from the plan</h2>
+  <div class="card">
+    <ul>
+      <li>Validation errors use the existing <code>400</code> with <code>fields</code>, not <code>422</code>.</li>
+      <li>CSV export returns <code>{ filename, csv }</code>; the admin app saves the file. Formula-looking cells get a leading <code>'</code>.</li>
+      <li>"Email me new leads" sits with the other email alerts (Live chat tab), same three choices, default Always.</li>
+      <li>Pre-chat card shows after the welcome message.</li>
+      <li>Deleting a field has no confirm dialog; the card says old leads keep their answers.</li>
+      <li><code>RateLimiter::allow_daily()</code> added; <code>leads.event_id</code> indexed; <code>lead_closed</code> written once in a row.</li>
+      <li><code>GET /live/chats</code> returns <code>leadForm</code>; the Conversations viewer also lists leads sent before the first question.</li>
+    </ul>
+    <p class="meta" style="margin:0">Commits: LF0 8a08a1d + 9fe0c18 · LF1 698bddf · LF2 7969994 · LF3 1b28e1e · LF4 fac6184 · LF5 2026fd3</p>
+  </div>
+</main>
+</body>
+</html>

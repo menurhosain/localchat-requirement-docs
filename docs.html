@@ -341,7 +341,7 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
       </thead>
       <tbody>
         <tr><td><code>conversation_id</code></td><td class="col-type">BIGINT</td><td>Which conversation the question belongs to.</td><td class="example">12</td></tr>
-        <tr><td><code>kind</code></td><td class="col-type">VARCHAR(10)</td><td><code>qa</code> = question + AI answer (all rows before v4); <code>visitor</code> = visitor message while a team member is in charge (no AI); <code>agent</code> = team member reply (text in <code>answer</code>); <code>event</code> = joined, handed back, auto handed back, visitor left (name in <code>reason</code>). Only <code>qa</code> rows count as unanswered.</td><td class="example">qa</td></tr>
+        <tr><td><code>kind</code></td><td class="col-type">VARCHAR(10)</td><td><code>qa</code> = question + AI answer (all rows before v4); <code>visitor</code> = visitor message while a team member is in charge (no AI); <code>agent</code> = team member reply (text in <code>answer</code>); <code>event</code> = joined, handed back, auto handed back, visitor left, asked for a person, and (v6 lead form) <code>lead_requested</code> (team member sent the form), <code>lead_submitted</code> (visitor sent it; the lead row points here), <code>lead_closed</code> (visitor closed it) (name in <code>reason</code>). Only <code>qa</code> rows count as unanswered.</td><td class="example">qa</td></tr>
         <tr><td><code>user_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The team member who wrote an <code>agent</code> row or caused an <code>event</code>.</td><td class="example">7</td></tr>
         <tr><td><code>question</code> / <code>answer</code></td><td class="col-type">TEXT / MEDIUMTEXT</td><td>What the visitor asked and what the chatbot answered (the server's own copy, never the history the browser sends).</td><td class="example">Do you ship abroad?</td></tr>
         <tr><td><code>status</code></td><td class="col-type">VARCHAR(20)</td><td><code>qa</code> rows: <code>answered</code>, <code>dont_know</code>, <code>error</code>, or <code>pending</code> (stopped before the answer finished). <code>visitor</code> rows: <code>human</code>. <code>agent</code> and <code>event</code> rows: <code>sent</code>.</td><td class="example">dont_know</td></tr>
@@ -405,6 +405,30 @@ sha256( "Xenova/bge-small-en-v1.5:ea104dac…:q8:cls:1|Shipping Policy › Deliv
         <tr><td><code>seconds_*</code>, <code>openers_*</code></td><td class="col-type">BIGINT / INT</td><td>Time on chatbot and visitors who opened, total and split AI only / with a person (site row).</td><td class="example">4120, 23, 2</td></tr>
         <tr><td><code>time_buckets</code></td><td class="col-type">TEXT (JSON)</td><td>Visitors per time range (&lt;10 s, 10–30 s, … 1 h+), for the approximate median.</td><td class="example">{"all":[3,5,…]}</td></tr>
         <tr><td><code>devices</code></td><td class="col-type">TEXT (JSON)</td><td>Per device: visitors, opened, started, talked (site row).</td><td class="example">{"mobile":[60,9,6,1]}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Table 8: <code>wp_mnaisp_leads</code></h2>
+  <p>One row per sent lead form (added in schema v6, Leads tab). Kept until an admin deletes it: no automatic purge, and
+    deleting a conversation leaves its leads. Saved even when conversation recording is off. The WordPress personal-data
+    tools find and erase leads by <code>email</code>. The form itself (fields, trigger, texts) is the option
+    <code>mnaisp_lead_form</code>.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>What it means</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>conversation_uuid</code></td><td class="col-type">CHAR(36), can be empty</td><td>The widget's conversation ID. Joined to Table 3 by <code>uuid</code> when that row exists (not when the form came before the first question, or recording is off).</td><td class="example">3f1c…-…</td></tr>
+        <tr><td><code>event_id</code></td><td class="col-type">BIGINT, can be empty</td><td>The <code>lead_submitted</code> event row in Table 4: where the lead shows in the transcript and the Live chat thread.</td><td class="example">257</td></tr>
+        <tr><td><code>answers</code></td><td class="col-type">LONGTEXT (JSON)</td><td>Every answer with the field's ID, type and label <b>as it was when sent</b>, so renaming or deleting a field never breaks old leads.</td><td class="example">[{"id":"f_name0001","type":"text","label":"Name","value":"Sam"}]</td></tr>
+        <tr><td><code>email</code> / <code>name</code></td><td class="col-type">VARCHAR(191), can be empty</td><td>First Email answer (lowercase) and first Text answer: list columns, search, email subject, privacy tools.</td><td class="example">sam@example.com, Sam</td></tr>
+        <tr><td><code>consent</code></td><td class="col-type">TINYINT 0/1</td><td>The visitor ticked the consent box (only when the form asks for it).</td><td class="example">1</td></tr>
+        <tr><td><code>trigger_reason</code></td><td class="col-type">VARCHAR(20)</td><td>What showed the card: <code>after_answers</code>, <code>dont_know</code>, <code>handoff</code> (nobody online), <code>pre_chat</code>, <code>visitor</code> (header icon / "Fill in" / link), <code>agent</code> (team member).</td><td class="example">after_answers</td></tr>
+        <tr><td><code>page_url</code></td><td class="col-type">VARCHAR(500), can be empty</td><td>Page on this site, without query string or #.</td><td class="example">https://example.com/pricing/</td></tr>
+        <tr><td><code>user_id</code></td><td class="col-type">BIGINT, can be empty</td><td>Logged-in visitor (login cookie), like conversations.</td><td class="example">—</td></tr>
+        <tr><td><code>created_at</code></td><td class="col-type">DATETIME (UTC)</td><td>When it was sent.</td><td class="example">2026-11-18 11:20:53</td></tr>
       </tbody>
     </table>
   </div>
